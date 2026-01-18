@@ -61,7 +61,6 @@ public class RegistrationActivity extends AppCompatActivity {
             return insets;
         });
 
-        // --- FIX IS HERE: More robust view initialization ---
         // Find the outer TextInputLayout first
         TextInputLayout usernameInputLayout = findViewById(R.id.textFieldUsername);
         TextInputLayout emailInputLayout = findViewById(R.id.textFieldEmail);
@@ -73,7 +72,6 @@ public class RegistrationActivity extends AppCompatActivity {
         emailEditText = (TextInputEditText) emailInputLayout.getEditText();
         emailConfirmEditText = (TextInputEditText) emailConfirmInputLayout.getEditText();
         passwordEditText = (TextInputEditText) passwordInputLayout.getEditText();
-        // --- END OF FIX ---
 
         registerButton = findViewById(R.id.buttonRegister);
         profileImageView = findViewById(R.id.iv_profile_picture);
@@ -81,10 +79,18 @@ public class RegistrationActivity extends AppCompatActivity {
 
         registerButton.setOnClickListener(v -> registerButtonClick());
 
+        // --- THIS IS THE FIX ---
+        // Instead of just finishing the activity, we explicitly start the LoginActivity.
+        // This is more robust and prevents crashes if the back stack is not what you expect.
         loginLinkTextView.setOnClickListener(v -> {
-            // Correctly finish the activity to go back to the login screen
+            // Assuming your login activity is named "LoginActivity.java"
+            Intent intent = new Intent(RegistrationActivity.this, LoginActivity.class);
+            startActivity(intent);
+            // We also finish this activity so the user can't press "back" on the login screen
+            // and return to the registration screen.
             finish();
         });
+        // --- END OF FIX ---
 
         profileImageView.setOnClickListener(v -> {
             // Placeholder for image picker logic
@@ -96,7 +102,6 @@ public class RegistrationActivity extends AppCompatActivity {
     private void registerButtonClick() {
         Log.d(TAG, "Register button clicked");
 
-        // We can be sure these are not null now
         String email = emailEditText.getText().toString().trim();
         String emailConfirm = emailConfirmEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
