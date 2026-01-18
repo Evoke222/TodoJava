@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,27 +18,31 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.todojava.utils.RegistrationManager;
-import com.google.android.material.imageview.ShapeableImageView;
-import com.google.android.material.textfield.TextInputEditText; // Import this
-import com.google.android.material.textfield.TextInputLayout;   // Import this
+import com.example.todojava.utils.UserImageSelector; // Your existing import
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.io.File;
 
 public class RegistrationActivity extends AppCompatActivity {
 
-    // Change these to TextInputEditText for type safety
     private TextInputEditText emailEditText;
     private TextInputEditText emailConfirmEditText;
     private TextInputEditText passwordEditText;
     private TextInputEditText usernameEditText;
 
     private Button registerButton;
-    private ShapeableImageView profileImageView;
+    private ImageView profileImageView;
     private TextView loginLinkTextView;
 
     private FirebaseAuth auth;
-    private File profileImageFile = null;
+
+    // The UserImageSelector will manage everything related to image picking.
+    private UserImageSelector userImageSelector;
+
+    // --- NO LAUNCHERS NEEDED HERE ---
+    // The UserImageSelector handles them internally.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,13 +66,34 @@ public class RegistrationActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Find the outer TextInputLayout first
+        // Initialize views
+        initializeViews();
+
+        // --- THIS IS THE CORRECT, SIMPLIFIED IMPLEMENTATION ---
+        // 1. Initialize UserImageSelector. It automatically registers its own launchers.
+        userImageSelector = new UserImageSelector(this, profileImageView);
+
+        // 2. Set the click listener to call the simple `showImageSourceDialog` method.
+        profileImageView.setOnClickListener(v -> userImageSelector.showImageSourceDialog());
+        // --- End of fix ---
+
+        // Set other listeners
+        registerButton.setOnClickListener(v -> registerButtonClick());
+        loginLinkTextView.setOnClickListener(v -> {
+            Intent intent = new Intent(RegistrationActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+        });
+    }
+
+    // --- onActivityResult is NOT needed and should remain deleted ---
+
+    private void initializeViews() {
         TextInputLayout usernameInputLayout = findViewById(R.id.textFieldUsername);
         TextInputLayout emailInputLayout = findViewById(R.id.textFieldEmail);
         TextInputLayout emailConfirmInputLayout = findViewById(R.id.textFieldEmailConfirm);
         TextInputLayout passwordInputLayout = findViewById(R.id.textFieldPassword);
 
-        // Then get the EditText from inside the layout
         usernameEditText = (TextInputEditText) usernameInputLayout.getEditText();
         emailEditText = (TextInputEditText) emailInputLayout.getEditText();
         emailConfirmEditText = (TextInputEditText) emailConfirmInputLayout.getEditText();
@@ -76,27 +102,6 @@ public class RegistrationActivity extends AppCompatActivity {
         registerButton = findViewById(R.id.buttonRegister);
         profileImageView = findViewById(R.id.iv_profile_picture);
         loginLinkTextView = findViewById(R.id.textViewLoginLink);
-
-        registerButton.setOnClickListener(v -> registerButtonClick());
-
-        // --- THIS IS THE FIX ---
-        // Instead of just finishing the activity, we explicitly start the LoginActivity.
-        // This is more robust and prevents crashes if the back stack is not what you expect.
-        loginLinkTextView.setOnClickListener(v -> {
-            // Assuming your login activity is named "LoginActivity.java"
-            Intent intent = new Intent(RegistrationActivity.this, LoginActivity.class);
-            startActivity(intent);
-            // We also finish this activity so the user can't press "back" on the login screen
-            // and return to the registration screen.
-            finish();
-        });
-        // --- END OF FIX ---
-
-        profileImageView.setOnClickListener(v -> {
-            // Placeholder for image picker logic
-            Toast.makeText(this, "Choose a profile picture.", Toast.LENGTH_SHORT).show();
-            // openImagePicker(); // You will implement this method later
-        });
     }
 
     private void registerButtonClick() {
@@ -117,11 +122,21 @@ public class RegistrationActivity extends AppCompatActivity {
             return;
         }
 
+        // --- FIX: This method name is different in your UserImageSelector ---
+        // Change from getSelectedImageFile() to createImageFile()
+        File imageFile = userImageSelector.createImageFile();
+
+        // Check if an image was selected, though your registration manager might handle null
+        if (imageFile == null) {
+            Log.w(TAG, "No profile image was selected by the user.");
+            // You might want to show a toast here, but for now we'll proceed
+        }
+
         RegistrationManager registrationManager = new RegistrationManager(RegistrationActivity.this);
         registrationManager.startRegistration(
                 email,
                 password,
-                profileImageFile, // Pass the File object (can be null)
+                imageFile, // Pass the File object from UserImageSelector
                 new RegistrationManager.OnResultCallback(){
                     @Override
                     public void onResult(boolean success, String message) {

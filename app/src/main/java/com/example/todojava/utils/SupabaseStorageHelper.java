@@ -17,9 +17,9 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class SupabaseStorageHelper {
     private static final String supabaseUrl = "https://hfpinsydceicfxmxgmcu.supabase.co";
 
-    private static final String supabaseKey = "sb_publishable_dRNtl3vYdvC9Saq8489pIA_o09QcsJG";
+    private static final String supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhmcGluc3lkY2VpY2Z4bXhnbWN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3MjE5MTksImV4cCI6MjA4NDI5NzkxOX0.XVEuNZ__MX1Y8sZKXfOnSQoVV3Eg3gxGv7OHdkx5Sa0";
 
-    private static final String SUPABASE_BUCKET = "Bublic bucket";
+    private static final String SUPABASE_BUCKET = "todo-bucket";
 
     private static final String TAG = "SupabaseStorageHelper";
 
