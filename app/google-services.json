@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "947974518016",
+    "project_id": "todojava-cca15",
+    "storage_bucket": "todojava-cca15.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947974518016:android:00b1693b7d3cd45930efe5",
+        "android_client_info": {
+          "package_name": "com.example.todojava"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWavFrynE7i1AlPWsstIy_xsEdwd6zZE8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
