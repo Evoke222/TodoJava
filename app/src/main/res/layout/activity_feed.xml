@@ -8,17 +8,28 @@
     tools:context=".FeedActivity">
 
   <ImageView
-      android:id="@+id/ivProfilePicture"
-      android:layout_width="48dp"
-      android:layout_height="48dp"
-      android:layout_marginStart="16dp"
-      android:layout_marginTop="16dp"
-      android:contentDescription="Profile Picture"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toTopOf="parent"
-      tools:src="@tools:sample/avatars" />
+  android:id="@+id/ivProfilePicture"
+  android:layout_width="48dp"
+  android:layout_height="48dp"
+  android:layout_marginStart="16dp"
+  android:layout_marginTop="16dp"
+  android:contentDescription="Profile Picture"
+  app:layout_constraintStart_toStartOf="parent"
+  app:layout_constraintTop_toTopOf="parent"
+  tools:src="@tools:sample/avatars" />
 
-
+  <!-- TextView for the Username -->
+  <TextView
+      android:id="@+id/tvUsername"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="8dp"
+      android:textSize="18sp"
+      android:textStyle="bold"
+      app:layout_constraintBottom_toBottomOf="@+id/ivProfilePicture"
+      app:layout_constraintStart_toEndOf="@+id/ivProfilePicture"
+      app:layout_constraintTop_toTopOf="@+id/ivProfilePicture"
+      tools:text="Ariel" />
 
   <Button
       android:id="@+id/buttonLogout"

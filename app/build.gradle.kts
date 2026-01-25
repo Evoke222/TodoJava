@@ -47,5 +47,6 @@ dependencies {
     implementation (libs.retrofit)
     implementation (libs.converter.gson)
     implementation (libs.okhttp)
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 
 }

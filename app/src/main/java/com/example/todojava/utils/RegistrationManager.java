@@ -119,7 +119,6 @@ public class RegistrationManager {
         else if(registrationPhase == REGISTRATION_PHASE_DONE)
         {
             Log.i(TAG, "executeNextPhase: Registration done, signing out user.");
-            auth.signOut(); // <-- Added this line
             onResultCallback.onResult(true, "Registration successful!");
         }
     }
