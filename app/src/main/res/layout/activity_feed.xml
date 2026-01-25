@@ -7,6 +7,19 @@
     android:layout_height="match_parent"
     tools:context=".FeedActivity">
 
+  <ImageView
+      android:id="@+id/ivProfilePicture"
+      android:layout_width="48dp"
+      android:layout_height="48dp"
+      android:layout_marginStart="16dp"
+      android:layout_marginTop="16dp"
+      android:contentDescription="Profile Picture"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toTopOf="parent"
+      tools:src="@tools:sample/avatars" />
+
+
+
   <Button
       android:id="@+id/buttonLogout"
       android:layout_width="wrap_content"

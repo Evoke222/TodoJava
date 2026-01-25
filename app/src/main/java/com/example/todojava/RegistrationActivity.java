@@ -25,6 +25,9 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.io.File;
 
+
+
+
 public class RegistrationActivity extends AppCompatActivity {
 
     private TextInputEditText emailEditText;
@@ -42,6 +45,8 @@ public class RegistrationActivity extends AppCompatActivity {
     private UserImageSelector userImageSelector;
 
     // --- NO LAUNCHERS NEEDED HERE ---
+
+
     // The UserImageSelector handles them internally.
 
     @Override
@@ -133,10 +138,14 @@ public class RegistrationActivity extends AppCompatActivity {
         }
 
         RegistrationManager registrationManager = new RegistrationManager(RegistrationActivity.this);
+
+        // --- THIS IS THE LINE TO FIX ---
+        // The original call was missing the 'username' argument.
         registrationManager.startRegistration(
                 email,
                 password,
-                imageFile, // Pass the File object from UserImageSelector
+                username,   // <-- ADD THE USERNAME VARIABLE HERE
+                imageFile,
                 new RegistrationManager.OnResultCallback(){
                     @Override
                     public void onResult(boolean success, String message) {

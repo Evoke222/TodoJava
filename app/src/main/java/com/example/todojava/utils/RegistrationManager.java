@@ -10,8 +10,11 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class RegistrationManager {
@@ -25,7 +28,7 @@ public class RegistrationManager {
     private int registrationPhase;
 
     FirebaseAuth auth;
-
+    FirebaseFirestore db;
     String userId;
 
     String email;
@@ -35,6 +38,9 @@ public class RegistrationManager {
 
     OnResultCallback onResultCallback;
     File imageFile;
+
+    String username;
+    String pfpUrl;
 
 
     public RegistrationManager(Activity activity) {
@@ -49,12 +55,14 @@ public class RegistrationManager {
 
     public void startRegistration(String email,
                                   String password,
+                                  String username,
                                   File imageFile,
                                   OnResultCallback onResultCallback)
     {
         this.onResultCallback = onResultCallback;
         this.email = email;
         this.password = password;
+        this.username = username;
         this.imageFile = imageFile;
 
         executeNextPhase();
@@ -155,12 +163,12 @@ public class RegistrationManager {
                 });
     }
 
-    private void uploadProfilePictureToSupabase() {
-        if (imageFile == null) {
-            Log.d(TAG, "uploadProfilePictureToSupabase: no image file provided");
-            phaseDone();
-            return;
-        }
+    private void uploadProfilePictureToSupabase() {        if (imageFile == null) {
+        Log.d(TAG, "uploadProfilePictureToSupabase: no image file provided, skipping.");
+        this.pfpUrl = ""; // Set pfpUrl to empty string if no image
+        phaseDone();
+        return;
+    }
 
         String filename = "images/profile-pics/" + userId + ".jpg";
         Log.i(TAG, "Uploading file to Supabase: " + filename);
@@ -170,6 +178,10 @@ public class RegistrationManager {
             public void onResult(boolean success, String url, String error) {
                 if (success) {
                     Log.i(TAG, "Profile picture uploaded successfully to Supabase. Public URL: " + url);
+
+                    // --- SAVE THE URL ---
+                    pfpUrl = url;
+
                     phaseDone();
                 } else {
                     Log.e(TAG, "Supabase upload failed: " + error);
@@ -181,7 +193,28 @@ public class RegistrationManager {
 
 
     private void saveUserToFirestore() {
-        phaseDone();
-    }
+        Log.d(TAG, "Saving user to Firestore. UID: " + userId + ", Username: " + username);
 
+        // 1. Make sure we have a db instance
+        if (db == null) {
+            db = FirebaseFirestore.getInstance();
+        }
+
+        // 2. Create a Map to hold the user data
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("username", username);
+        userMap.put("pfp_url", pfpUrl); // Use the URL we saved from the Supabase upload
+
+        // 3. Save the map to a new document in the "users" collection
+        db.collection("users").document(userId)
+                .set(userMap)
+                .addOnSuccessListener(aVoid -> {
+                    Log.i(TAG, "User document created in Firestore for UID: " + userId);
+                    phaseDone(); // Move to the next phase on success
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to save user data to Firestore", e);
+                    phaseFailed("Failed to save user data: " + e.getMessage()); // Fail registration on error
+                });
+    }
 }
