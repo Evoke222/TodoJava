@@ -14,6 +14,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TodoJava" >
         <activity
+            android:name=".tasks.AddTaskActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TodoJava.DialogActivity" />
+        <activity
             android:name=".FeedActivity"
             android:exported="false" />
         <activity

@@ -1,55 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context=".FeedActivity">
 
-  <ImageView
-  android:id="@+id/ivProfilePicture"
-  android:layout_width="48dp"
-  android:layout_height="48dp"
-  android:layout_marginStart="16dp"
-  android:layout_marginTop="16dp"
-  android:contentDescription="Profile Picture"
-  app:layout_constraintStart_toStartOf="parent"
-  app:layout_constraintTop_toTopOf="parent"
-  tools:src="@tools:sample/avatars" />
-
-  <!-- TextView for the Username -->
-  <TextView
-      android:id="@+id/tvUsername"
-      android:layout_width="wrap_content"
+  <!-- 1. The Header (Unchanged) -->
+  <androidx.constraintlayout.widget.ConstraintLayout
+      android:id="@+id/headerLayout"
+      android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:layout_marginStart="8dp"
-      android:textSize="18sp"
-      android:textStyle="bold"
-      app:layout_constraintBottom_toBottomOf="@+id/ivProfilePicture"
-      app:layout_constraintStart_toEndOf="@+id/ivProfilePicture"
-      app:layout_constraintTop_toTopOf="@+id/ivProfilePicture"
-      tools:text="Ariel" />
+      android:padding="16dp">
 
-  <Button
-      android:id="@+id/buttonLogout"
-      android:layout_width="wrap_content"
+    <ImageView
+        android:id="@+id/ivProfilePicture"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@tools:sample/avatars" />
+
+    <TextView
+        android:id="@+id/tvUsername"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@id/ivProfilePicture"
+        app:layout_constraintEnd_toStartOf="@id/buttonLogout"
+        app:layout_constraintTop_toTopOf="@id/ivProfilePicture"
+        app:layout_constraintBottom_toBottomOf="@id/ivProfilePicture"
+        tools:text="Username" />
+
+    <Button
+        android:id="@+id/buttonLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Logout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/ivProfilePicture"
+        app:layout_constraintBottom_toBottomOf="@id/ivProfilePicture"/>
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
+
+  <!-- Space Widget (Unchanged) -->
+  <Space
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="0.3" />
+
+  <!-- 2. The Layer with the Add Task Button -->
+  <FrameLayout
+      android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:layout_marginTop="16dp"
-      android:layout_marginEnd="16dp"
-      android:text="Logout"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintTop_toTopOf="parent" />
+      android:paddingStart="16dp"
+      android:paddingEnd="16dp"
+      android:paddingBottom="8dp">
 
-  <TextView
-      android:id="@+id/textViewFeed"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="Welcome to your Feed!"
-      android:textSize="24sp"
-      app:layout_constraintBottom_toBottomOf="parent"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toTopOf="parent" />
+    <!--
+      FIX: Changed this back to a FloatingActionButton to match the Java code.
+      This will resolve the "ClassCastException" crash.
+    -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddTask"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:text="Add Task"
+        app:srcCompat="@drawable/ic_add"
+        app:fabSize="auto"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.SmallComponent" />
+    <!-- The shapeAppearanceOverlay makes it more rectangular -->
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+  </FrameLayout>
+
+  <!-- 3. The Task List (Unchanged) -->
+  <androidx.recyclerview.widget.RecyclerView
+      android:id="@+id/tasksRecyclerView"
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="0.7"
+      tools:listitem="@layout/task_item" />
+
+</LinearLayout>
