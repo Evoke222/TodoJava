@@ -16,6 +16,10 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.QuerySnapshot;
+import java.util.Random;
+
 
 public class RegistrationManager {
     private static final String TAG = "RegistrationManager";
@@ -23,14 +27,17 @@ public class RegistrationManager {
     private static final int REGISTRATION_PHASE_VALIDATE_USER_INFO = 0;
     private static final int REGISTRATION_PHASE_CREATE_USER = 1;
     private static final int REGISTRATION_PHASE_UPLOAD_PIC = 2;
-    private static final int REGISTRATION_PHASE_UPLOAD_DATA = 3;
-    private static final int REGISTRATION_PHASE_DONE = 4;
+    private static final int REGISTRATION_PHASE_GENERATE_SHARE_ID = 3;
+    private static final int REGISTRATION_PHASE_UPLOAD_DATA = 4;
+    private static final int REGISTRATION_PHASE_DONE = 5;
+
     private int registrationPhase;
 
     FirebaseAuth auth;
     FirebaseFirestore db;
     String userId;
 
+    String shareId;
     String email;
     String password;
 
@@ -52,6 +59,7 @@ public class RegistrationManager {
         registrationPhase = REGISTRATION_PHASE_VALIDATE_USER_INFO;
 
     }
+
 
     public void startRegistration(String email,
                                   String password,
@@ -77,7 +85,6 @@ public class RegistrationManager {
     private void phaseDone()
     {
         registrationPhase++;
-        executeNextPhase();
     }
 
     private void phaseFailed(String message)
@@ -111,6 +118,13 @@ public class RegistrationManager {
             Log.i(TAG, "executeNextPhase: Uploading profile picture to supabase");
             uploadProfilePictureToSupabase();
         }
+        // --- STEP 4: This block is new ---
+        else if(registrationPhase == REGISTRATION_PHASE_GENERATE_SHARE_ID)
+        {
+            Log.i(TAG, "executeNextPhase: Generating unique share ID");
+            generateUniqueShareId();
+        }
+        // --- End of new block ---
         else if(registrationPhase == REGISTRATION_PHASE_UPLOAD_DATA)
         {
             Log.i(TAG, "executeNextPhase: Uploading user data to firestore");
@@ -133,6 +147,7 @@ public class RegistrationManager {
         }
 
         phaseDone();
+        executeNextPhase();
     }
 
     private void createUser()
@@ -150,6 +165,7 @@ public class RegistrationManager {
                                 userId = user.getUid();
                                 Log.i(TAG, "Firebase Auth registration successful. UID: " + userId);
                                 phaseDone();
+                                executeNextPhase();
                             } else {
                                 Log.e(TAG, "Firebase Auth registration succeeded but user is null");
                                 phaseFailed("user is null");
@@ -166,6 +182,7 @@ public class RegistrationManager {
         Log.d(TAG, "uploadProfilePictureToSupabase: no image file provided, skipping.");
         this.pfpUrl = ""; // Set pfpUrl to empty string if no image
         phaseDone();
+        executeNextPhase();
         return;
     }
 
@@ -182,6 +199,7 @@ public class RegistrationManager {
                     pfpUrl = url;
 
                     phaseDone();
+                    executeNextPhase();
                 } else {
                     Log.e(TAG, "Supabase upload failed: " + error);
                     phaseFailed("Failed to upload profile picture (Supabase): " + error);
@@ -202,18 +220,64 @@ public class RegistrationManager {
         // 2. Create a Map to hold the user data
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("username", username);
-        userMap.put("pfp_url", pfpUrl); // Use the URL we saved from the Supabase upload
+        userMap.put("pfp_url", pfpUrl);
+
+        // --- THIS IS THE FIX ---
+        // Add the shareId that we generated in the previous phase to the map.
+        userMap.put("shareId", this.shareId);
+        // --- END OF FIX ---
 
         // 3. Save the map to a new document in the "users" collection
         db.collection("users").document(userId)
                 .set(userMap)
                 .addOnSuccessListener(aVoid -> {
                     Log.i(TAG, "User document created in Firestore for UID: " + userId);
-                    phaseDone(); // Move to the next phase on success
+                    phaseDone();
+                    executeNextPhase();
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Failed to save user data to Firestore", e);
                     phaseFailed("Failed to save user data: " + e.getMessage()); // Fail registration on error
                 });
+    }
+
+    private String generateRandomId() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder builder = new StringBuilder();
+        Random random = new Random();
+        for (int i = 0; i < 6; i++) {
+            builder.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return builder.toString();
+    }
+
+
+    private void generateUniqueShareId() {
+        if (db == null) {
+            db = FirebaseFirestore.getInstance();
+        }
+        String newId = generateRandomId();
+        CollectionReference usersRef = db.collection("users");
+
+        // Check if a document with this 'shareId' already exists
+        usersRef.whereEqualTo("shareId", newId).get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                QuerySnapshot snapshot = task.getResult();
+                if (snapshot.isEmpty()) {
+                    // The ID is unique, save it and proceed
+                    Log.d(TAG, "Share ID " + newId + " is unique.");
+                    this.shareId = newId; // Store the unique ID
+                    phaseDone();
+                    executeNextPhase();
+                } else {
+                    // The ID is taken, try again by calling the function recursively
+                    Log.d(TAG, "Share ID " + newId + " is already taken. Generating a new one.");
+                    generateUniqueShareId();
+                }
+            } else {
+                // Handle the error (e.g., network issue)
+                phaseFailed("Failed to check for unique Share ID: " + task.getException().getMessage());
+            }
+        });
     }
 }

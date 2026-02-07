@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -55,6 +56,9 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     private List<Task> taskList;
     private FloatingActionButton fabAddTask;
 
+    private ImageButton buttonSettings;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +74,7 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         buttonLogout = findViewById(R.id.buttonLogout);
         tasksRecyclerView = findViewById(R.id.tasksRecyclerView);
         fabAddTask = findViewById(R.id.fabAddTask);
+        buttonSettings = findViewById(R.id.buttonSettings);
 
         // Setup the RecyclerView
         setupRecyclerView();
@@ -89,6 +94,13 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             Toast.makeText(FeedActivity.this, "Logged out", Toast.LENGTH_SHORT).show();
             goToLogin();
         });
+
+        buttonSettings.setOnClickListener(v -> {
+            // Create an Intent to open SettingsActivity
+            Intent intent = new Intent(FeedActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        });
+
 
         loadUserProfile();
         loadTasks();
@@ -166,8 +178,8 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     // --- STEP 3: ADD THE INTERFACE METHOD IMPLEMENTATION ---
     @Override
     public void onTaskChecked(Task task, boolean isChecked) {
-        if (currentUser == null) {
-            Log.w(TAG, "User is not logged in, cannot update task.");
+        if (currentUser == null || task.getDocumentId() == null) {
+            Log.w(TAG, "User not logged in or Task ID is null, cannot update task.");
             return;
         }
 
@@ -176,7 +188,29 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         // Get the reference to the document in Firestore and update the 'completed' field
         db.collection("tasks").document(task.getDocumentId())
                 .update("completed", isChecked)
-                .addOnSuccessListener(aVoid -> Log.d(TAG, "Task successfully updated!"))
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Task 'completed' field successfully updated!"))
                 .addOnFailureListener(e -> Log.w(TAG, "Error updating task", e));
+    }
+
+    // --- ADD THIS MISSING METHOD TO FIX THE ERROR ---
+    @Override
+    public void onTaskDeleted(Task task) {
+        // First, check if the user is logged in and the task has a valid ID
+        if (currentUser == null || task.getDocumentId() == null) {
+            Log.w(TAG, "User not logged in or Task ID is null, cannot delete task.");
+            return;
+        }
+
+        Log.d(TAG, "Deleting task: " + task.getDocumentId());
+
+        // Get the reference to the document in Firestore and delete it
+        db.collection("tasks").document(task.getDocumentId())
+                .delete()
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Task successfully deleted!"))
+                .addOnFailureListener(e -> Log.w(TAG, "Error deleting task", e));
+
+        // You don't need to manually remove the task from the list here.
+        // Your real-time listener in loadTasks() will automatically see the change
+        // in Firestore and send an updated list to the adapter, which will refresh the UI.
     }
 }

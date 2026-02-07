@@ -12,5 +12,6 @@ public interface OnTaskInteractionListener {
      * @param isChecked The new state of the checkbox (true if checked, false otherwise).
      */
     void onTaskChecked(Task task, boolean isChecked);
+    void onTaskDeleted(Task task);
 
 }

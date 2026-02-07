@@ -1,20 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     tools:context=".FeedActivity">
 
-  <!-- 1. The Header (Unchanged) -->
+  <!-- The Header (Unchanged, still at the top) -->
   <androidx.constraintlayout.widget.ConstraintLayout
       android:id="@+id/headerLayout"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:padding="16dp">
-
+      android:padding="16dp"
+      app:layout_constraintTop_toTopOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintEnd_toEndOf="parent">
+    <!-- Your header content remains the same -->
     <ImageView
         android:id="@+id/ivProfilePicture"
         android:layout_width="60dp"
@@ -22,7 +24,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:src="@tools:sample/avatars" />
-
     <TextView
         android:id="@+id/tvUsername"
         android:layout_width="0dp"
@@ -35,7 +36,6 @@
         app:layout_constraintTop_toTopOf="@id/ivProfilePicture"
         app:layout_constraintBottom_toBottomOf="@id/ivProfilePicture"
         tools:text="Username" />
-
     <Button
         android:id="@+id/buttonLogout"
         android:layout_width="wrap_content"
@@ -44,46 +44,57 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/ivProfilePicture"
         app:layout_constraintBottom_toBottomOf="@id/ivProfilePicture"/>
-
   </androidx.constraintlayout.widget.ConstraintLayout>
 
-  <!-- Space Widget (Unchanged) -->
-  <Space
-      android:layout_width="match_parent"
-      android:layout_height="0dp"
-      android:layout_weight="0.3" />
-
-  <!-- 2. The Layer with the Add Task Button -->
-  <FrameLayout
-      android:layout_width="match_parent"
+  <!--
+  CHANGE 1: A Guideline to create the 20% vertical space.
+  This invisible line is positioned 20% down from the top of the screen.
+  -->
+  <androidx.constraintlayout.widget.Guideline
+      android:id="@+id/space_guideline"
+      android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:paddingStart="16dp"
-      android:paddingEnd="16dp"
-      android:paddingBottom="8dp">
+      android:orientation="horizontal"
+      app:layout_constraintGuide_begin="168dp" />
 
-    <!--
-      FIX: Changed this back to a FloatingActionButton to match the Java code.
-      This will resolve the "ClassCastException" crash.
-    -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAddTask"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:text="Add Task"
-        app:srcCompat="@drawable/ic_add"
-        app:fabSize="auto"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.SmallComponent" />
-    <!-- The shapeAppearanceOverlay makes it more rectangular -->
+  <!-- The Add Task Button (Now constrained to the guideline) -->
+  <com.google.android.material.floatingactionbutton.FloatingActionButton
+      android:id="@+id/fabAddTask"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginEnd="16dp"
+      app:srcCompat="@drawable/ic_add"
+      app:fabSize="auto"
+      app:layout_constraintTop_toBottomOf="@id/space_guideline"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.SmallComponent" />
 
-  </FrameLayout>
+  <!-- The Settings Button (Still at the bottom right) -->
+  <ImageButton
+      android:id="@+id/buttonSettings"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:background="?attr/selectableItemBackgroundBorderless"
+      android:contentDescription="Settings"
+      android:padding="16dp"
+      android:src="@drawable/ic_settings"
+      app:tint="?android:attr/textColorSecondary"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintEnd_toEndOf="parent" />
 
-  <!-- 3. The Task List (Unchanged) -->
+  <!--
+  CHANGE 2: The Task List (RecyclerView) is now constrained differently.
+  - Its top is below the Add Task button.
+  - Its bottom is constrained to the TOP of the Settings button.
+  This prevents them from ever overlapping.
+  -->
   <androidx.recyclerview.widget.RecyclerView
       android:id="@+id/tasksRecyclerView"
       android:layout_width="match_parent"
       android:layout_height="0dp"
-      android:layout_weight="0.7"
+      android:layout_marginTop="8dp"
+      app:layout_constraintTop_toBottomOf="@id/fabAddTask"
+      app:layout_constraintBottom_toTopOf="@id/buttonSettings"
       tools:listitem="@layout/task_item" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
