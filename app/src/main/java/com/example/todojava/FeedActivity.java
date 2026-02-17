@@ -3,18 +3,16 @@ package com.example.todojava;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.todojava.Friends.FriendsActivity;
 import com.example.todojava.tasks.AddTaskActivity;
 import com.example.todojava.tasks.OnTaskInteractionListener; // <-- ADD THIS IMPORT
 import com.example.todojava.tasks.Task;
@@ -23,13 +21,10 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +43,8 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     // Views from the layout
     private ImageView ivProfilePicture;
     private TextView tvUsername;
-    private Button buttonLogout;
+
+    private ImageButton buttonAddFriend;
 
     // Views and Adapter for the Task List
     private RecyclerView tasksRecyclerView;
@@ -71,10 +67,10 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         // Initialize views
         ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvUsername = findViewById(R.id.tvUsername);
-        buttonLogout = findViewById(R.id.buttonLogout);
         tasksRecyclerView = findViewById(R.id.tasksRecyclerView);
         fabAddTask = findViewById(R.id.fabAddTask);
         buttonSettings = findViewById(R.id.buttonSettings);
+        buttonAddFriend = findViewById(R.id.buttonAddFriend);
 
         // Setup the RecyclerView
         setupRecyclerView();
@@ -89,11 +85,7 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             startActivity(intent);
         });
 
-        buttonLogout.setOnClickListener(v -> {
-            mAuth.signOut();
-            Toast.makeText(FeedActivity.this, "Logged out", Toast.LENGTH_SHORT).show();
-            goToLogin();
-        });
+
 
         buttonSettings.setOnClickListener(v -> {
             // Create an Intent to open SettingsActivity
@@ -101,6 +93,10 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             startActivity(intent);
         });
 
+        buttonAddFriend.setOnClickListener(v -> {
+            Intent intent = new Intent(FeedActivity.this, FriendsActivity.class);
+            startActivity(intent);
+        });
 
         loadUserProfile();
         loadTasks();

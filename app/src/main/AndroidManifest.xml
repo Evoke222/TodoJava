@@ -16,6 +16,7 @@
         <activity
             android:name=".SettingsActivity"
             android:exported="false" />
+
         <activity
             android:name=".tasks.AddTaskActivity"
             android:exported="false"
@@ -23,6 +24,10 @@
         <activity
             android:name=".FeedActivity"
             android:exported="false" />
+        <activity
+            android:name=".Friends.FriendsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TodoJava.DialogActivity" />
         <activity
             android:name=".LoginActivity"
             android:exported="false" />

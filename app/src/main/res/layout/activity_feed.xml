@@ -32,18 +32,21 @@
         android:textSize="20sp"
         android:textStyle="bold"
         app:layout_constraintStart_toEndOf="@id/ivProfilePicture"
-        app:layout_constraintEnd_toStartOf="@id/buttonLogout"
         app:layout_constraintTop_toTopOf="@id/ivProfilePicture"
         app:layout_constraintBottom_toBottomOf="@id/ivProfilePicture"
         tools:text="Username" />
-    <Button
-        android:id="@+id/buttonLogout"
+
+    <ImageButton
+        android:id="@+id/buttonAddFriend"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Logout"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_person_add"
+        android:contentDescription="Add Friend"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/ivProfilePicture"
-        app:layout_constraintBottom_toBottomOf="@id/ivProfilePicture"/>
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
   </androidx.constraintlayout.widget.ConstraintLayout>
 
   <!--

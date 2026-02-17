@@ -1,5 +1,9 @@
-package com.example.todojava;import android.os.Bundle;
+package com.example.todojava;
+
+import android.content.Intent;
+import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button; // Import the Button class
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,12 +19,14 @@ public class SettingsActivity extends AppCompatActivity {
 
     private static final String TAG = "SettingsActivity";
 
-    // UI Elements
+    // --- UI Elements ---
     private ImageButton buttonBack;
     private TextView tvShareId;
+    private Button buttonLogout; // <<--- 1. DECLARE the logout button
 
-    // Firebase
+    // --- Firebase ---
     private FirebaseFirestore db;
+    private FirebaseAuth mAuth; // <<--- 2. DECLARE FirebaseAuth
     private FirebaseUser currentUser;
 
     @Override
@@ -28,16 +34,36 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        // Initialize Firebase instances
+        // --- Initialize Firebase instances ---
         db = FirebaseFirestore.getInstance();
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        mAuth = FirebaseAuth.getInstance(); // <<--- 3. INITIALIZE FirebaseAuth
+        currentUser = mAuth.getCurrentUser();
 
-        // Find views by their ID
+        // --- Find views by their ID ---
         buttonBack = findViewById(R.id.buttonBack);
         tvShareId = findViewById(R.id.tvShareId);
+        buttonLogout = findViewById(R.id.buttonLogout); // <<--- 4. INITIALIZE the logout button
 
-        // Set the listener for the back button
+        // --- Set Listeners ---
         buttonBack.setOnClickListener(v -> finish()); // Closes the activity
+
+        // Set the listener for the logout button
+        buttonLogout.setOnClickListener(v -> { // <<--- 5. ADD the click listener
+            // Sign the user out
+            mAuth.signOut();
+
+            // Create an Intent to go to the LoginActivity
+            Intent intent = new Intent(SettingsActivity.this, LoginActivity.class);
+
+            // Add flags to clear the activity stack. This prevents the user
+            // from pressing the back button and returning to the logged-in state.
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+
+            // Finish the current activity
+            finish();
+        });
+
 
         // Fetch and display the user's share ID
         loadUserShareId();
@@ -63,7 +89,6 @@ public class SettingsActivity extends AppCompatActivity {
                                 tvShareId.setText(shareId);
                                 Log.d(TAG, "Successfully loaded Share ID: " + shareId);
                             } else {
-                                // This might happen for users who registered before you added this feature
                                 tvShareId.setText("N/A");
                                 Log.w(TAG, "Share ID field is missing or empty for user: " + currentUser.getUid());
                             }
