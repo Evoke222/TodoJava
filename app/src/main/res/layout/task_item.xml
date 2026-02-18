@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- STEP 1: ADD MATERIALCARDVIEW AS THE NEW ROOT -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -13,33 +12,50 @@
     app:cardElevation="2dp"
     app:cardCornerRadius="8dp">
 
-    <!-- Your original ConstraintLayout now goes inside the CardView -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Your CheckBox (no changes here) -->
         <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/taskCheckBox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Your TextView (no changes here) -->
         <TextView
             android:id="@+id/taskTitleTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:textSize="18sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/button_delete_task"
             app:layout_constraintStart_toEndOf="@id/taskCheckBox"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="This is a sample task title" />
+
+        <TextView
+            android:id="@+id/taskDueDateTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@+id/taskTitleTextView"
+            app:layout_constraintEnd_toEndOf="@+id/taskTitleTextView"
+            app:layout_constraintTop_toBottomOf="@+id/taskTitleTextView"
+            tools:text="Due: 2024-12-25" />
+
+        <TextView
+            android:id="@+id/taskDetailsTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@+id/taskTitleTextView"
+            app:layout_constraintEnd_toEndOf="@+id/taskTitleTextView"
+            app:layout_constraintTop_toBottomOf="@+id/taskDueDateTextView"
+            tools:text="Here are some more details about the task." />
 
         <ImageButton
             android:id="@+id/button_delete_task"
@@ -48,7 +64,6 @@
             android:src="@drawable/ic_delete"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Delete task"
-            android:layout_marginStart="8dp"
             app:tint="?android:attr/textColorSecondary"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"

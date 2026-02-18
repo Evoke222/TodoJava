@@ -1,11 +1,15 @@
 package com.example.todojava.tasks;
 
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
+import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -19,10 +23,12 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ServerTimestamp;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class AddTaskActivity extends AppCompatActivity {
@@ -30,10 +36,13 @@ public class AddTaskActivity extends AppCompatActivity {
     private static final String TAG = "AddTaskActivity";
 
     private EditText etTaskTitle;
+    private EditText etTaskDueDate;
+    private EditText etTaskDetails;
     private Button buttonSaveTask;
 
     private FirebaseFirestore db;
     private FirebaseUser currentUser;
+    private Calendar selectedDueDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,85 +50,94 @@ public class AddTaskActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_add_task);
 
-
         View rootView = findViewById(android.R.id.content);
 
         etTaskTitle = rootView.findViewById(R.id.etTaskTitle);
+        etTaskDueDate = rootView.findViewById(R.id.etTaskDueDate);
+        etTaskDetails = rootView.findViewById(R.id.etTaskDetails);
         buttonSaveTask = rootView.findViewById(R.id.buttonSaveTask);
-        ImageButton buttonClose = rootView.findViewById(R.id.buttonClose); // This will now work
+        ImageButton buttonClose = rootView.findViewById(R.id.buttonClose);
 
-        // --- Initialize Firebase
         db = FirebaseFirestore.getInstance();
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
-        // --- Set click listener for the save button
-        buttonSaveTask.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveTask();
-            }
-        });
+        etTaskDueDate.setOnClickListener(v -> showDatePickerDialog());
 
-        // --- Set click listener for the new close button
-        // This will no longer crash because buttonClose is now found correctly.
-        buttonClose.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // finish() closes the current activity and goes back to the previous one
-                finish();
-            }
-        });
+        buttonSaveTask.setOnClickListener(v -> saveTask());
+
+        buttonClose.setOnClickListener(v -> finish());
     }
 
+    private void showDatePickerDialog() {
+        final Calendar c = Calendar.getInstance();
+        int year = c.get(Calendar.YEAR);
+        int month = c.get(Calendar.MONTH);
+        int day = c.get(Calendar.DAY_OF_MONTH);
 
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                (view, year1, monthOfYear, dayOfMonth) -> {
+                    selectedDueDate = Calendar.getInstance();
+                    selectedDueDate.set(year1, monthOfYear, dayOfMonth);
+                    showTimePickerDialog();
+                }, year, month, day);
+
+        datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
+        datePickerDialog.show();
+    }
+
+    private void showTimePickerDialog() {
+        final Calendar c = Calendar.getInstance();
+        int hour = c.get(Calendar.HOUR_OF_DAY);
+        int minute = c.get(Calendar.MINUTE);
+
+        TimePickerDialog timePickerDialog = new TimePickerDialog(this,
+                (view, hourOfDay, minute1) -> {
+                    selectedDueDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    selectedDueDate.set(Calendar.MINUTE, minute1);
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+                    etTaskDueDate.setText(sdf.format(selectedDueDate.getTime()));
+                }, hour, minute, false);
+        timePickerDialog.show();
+    }
 
     private void saveTask() {
         String taskTitle = etTaskTitle.getText().toString().trim();
+        String taskDueDate = etTaskDueDate.getText().toString().trim();
+        String taskDetails = etTaskDetails.getText().toString().trim();
 
-        // --- Validate that the title is not empty
         if (taskTitle.isEmpty()) {
             etTaskTitle.setError("Title cannot be empty");
             return;
         }
 
-        // --- Validate that the user is logged in
         if (currentUser == null) {
             Toast.makeText(this, "Error: User not logged in", Toast.LENGTH_SHORT).show();
             Log.e(TAG, "Attempted to save task, but user is null.");
             return;
         }
 
-        // --- Disable the button to prevent multiple clicks
         buttonSaveTask.setEnabled(false);
         Toast.makeText(this, "Saving...", Toast.LENGTH_SHORT).show();
 
-        // --- Create a new task object (using a Map)
         Map<String, Object> task = new HashMap<>();
         task.put("title", taskTitle);
+        task.put("dueDate", taskDueDate);
+        task.put("details", taskDetails);
         task.put("completed", false);
-        task.put("owner_uid", currentUser.getUid()); // Link task to the current user
-        task.put("created_at", new Date()); // Add a timestamp
+        task.put("owner_uid", currentUser.getUid());
+        task.put("created_at", new Date());
 
-        // --- Add a new document with a generated ID to the "tasks" collection
         db.collection("tasks")
                 .add(task)
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                    @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        Log.d(TAG, "DocumentSnapshot written with ID: " + documentReference.getId());
-                        Toast.makeText(AddTaskActivity.this, "Task saved!", Toast.LENGTH_SHORT).show();
-                        // --- Close the activity and return to the feed
-                        finish();
-                    }
+                .addOnSuccessListener(documentReference -> {
+                    Log.d(TAG, "DocumentSnapshot written with ID: " + documentReference.getId());
+                    Toast.makeText(AddTaskActivity.this, "Task saved!", Toast.LENGTH_SHORT).show();
+                    finish();
                 })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error adding document", e);
-                        Toast.makeText(AddTaskActivity.this, "Error saving task", Toast.LENGTH_SHORT).show();
-                        // --- Re-enable the button on failure
-                        buttonSaveTask.setEnabled(true);
-                    }
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error adding document", e);
+                    Toast.makeText(AddTaskActivity.this, "Error saving task", Toast.LENGTH_SHORT).show();
+                    buttonSaveTask.setEnabled(true);
                 });
     }
 }
