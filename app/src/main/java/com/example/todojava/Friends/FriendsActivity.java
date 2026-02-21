@@ -142,13 +142,11 @@ public class FriendsActivity extends AppCompatActivity implements FriendRequestA
                 });
     }
 
-    // --- START OF FIX: This method is now completely replaced ---
     private void loadUsernamesForRequests(List<String> userIds) {
         if (userIds.isEmpty()) {
             requestAdapter.notifyDataSetChanged();
             return;
         }
-        // Use a counter to know when all async calls are done
         AtomicInteger counter = new AtomicInteger(userIds.size());
 
         for (String userId : userIds) {
@@ -157,26 +155,21 @@ public class FriendsActivity extends AppCompatActivity implements FriendRequestA
                         if (documentSnapshot.exists()) {
                             User user = documentSnapshot.toObject(User.class);
                             if (user != null) {
-                                // The key is the user's ID, which is the document ID
                                 userMap.put(userId, user);
                             }
                         }
-                        // Decrement counter and check if this is the last fetch
                         if (counter.decrementAndGet() == 0) {
-                            // All user profiles have been fetched, now update the adapter
                             requestAdapter.notifyDataSetChanged();
                         }
                     })
                     .addOnFailureListener(e -> {
                         Log.e(TAG, "Failed to fetch user profile for " + userId, e);
-                        // Still decrement counter on failure to avoid getting stuck
                         if (counter.decrementAndGet() == 0) {
                             requestAdapter.notifyDataSetChanged();
                         }
                     });
         }
     }
-    // --- END OF FIX ---
 
 
     private void loadFriendsList() {
@@ -194,8 +187,6 @@ public class FriendsActivity extends AppCompatActivity implements FriendRequestA
                 return;
             }
 
-            // This query for the friends list is also flawed for the same reason.
-            // Let's fix it the same way.
             friendList.clear();
             AtomicInteger friendCounter = new AtomicInteger(friendUids.size());
 
@@ -218,7 +209,6 @@ public class FriendsActivity extends AppCompatActivity implements FriendRequestA
     }
 
     private void sendFriendRequestFromInput() {
-        // NOTE: Your 'shareid' field in Firestore is lowercase. We must search for lowercase.
         String shareId = editTextShareId.getText().toString().trim();
         if (shareId.isEmpty()) {
             Toast.makeText(this, "Please enter a Share ID", Toast.LENGTH_SHORT).show();
@@ -231,7 +221,7 @@ public class FriendsActivity extends AppCompatActivity implements FriendRequestA
     private void sendFriendRequest(String shareId) {
         final String fromUserId = currentUser.getUid();
 
-        db.collection("users").whereEqualTo("shareid", shareId).limit(1).get()
+        db.collection("users").whereEqualTo("shareId", shareId).limit(1).get()
                 .addOnCompleteListener(task -> {
                     if (!task.isSuccessful() || task.getResult() == null || task.getResult().isEmpty()) {
                         Toast.makeText(this, "User not found. Please check the ID.", Toast.LENGTH_LONG).show();
@@ -239,7 +229,7 @@ public class FriendsActivity extends AppCompatActivity implements FriendRequestA
                         return;
                     }
 
-                    com.google.firebase.firestore.DocumentSnapshot userDocument = task.getResult().getDocuments().get(0);
+                    DocumentSnapshot userDocument = task.getResult().getDocuments().get(0);
                     String toUserId = userDocument.getId();
 
                     if (fromUserId.equals(toUserId)) {
@@ -254,7 +244,6 @@ public class FriendsActivity extends AppCompatActivity implements FriendRequestA
                         return;
                     }
 
-                    // Query 1: Check for an existing request from You -> Them
                     db.collection("friend_requests")
                             .whereEqualTo("fromUserId", fromUserId)
                             .whereEqualTo("toUserId", toUserId)
@@ -265,7 +254,6 @@ public class FriendsActivity extends AppCompatActivity implements FriendRequestA
                                     Toast.makeText(this, "You have already sent a request to this user.", Toast.LENGTH_LONG).show();
                                     buttonAddFriend.setEnabled(true);
                                 } else {
-                                    // Query 2: Check for an existing request from Them -> You
                                     db.collection("friend_requests")
                                             .whereEqualTo("fromUserId", toUserId)
                                             .whereEqualTo("toUserId", fromUserId)

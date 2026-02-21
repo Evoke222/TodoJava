@@ -5,7 +5,7 @@ import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
 import java.util.List;
 
-public class Task {
+public class Event {
     @DocumentId
     private String documentId;
 
@@ -20,13 +20,10 @@ public class Task {
 
     private List<String> collaborators;
 
-    private String type = "task";
-
-    private String sharedWithUid;
-    private String shareStatus; // e.g., "pending", "accepted", "declined"
+    private String type = "event";
 
     // Firestore requires a public, empty constructor
-    public Task() {}
+    public Event() {}
 
     public String getDocumentId() {
         return documentId;
@@ -98,21 +95,5 @@ public class Task {
 
     public void setType(String type) {
         this.type = type;
-    }
-
-    public String getSharedWithUid() {
-        return sharedWithUid;
-    }
-
-    public void setSharedWithUid(String sharedWithUid) {
-        this.sharedWithUid = sharedWithUid;
-    }
-
-    public String getShareStatus() {
-        return shareStatus;
-    }
-
-    public void setShareStatus(String shareStatus) {
-        this.shareStatus = shareStatus;
     }
 }

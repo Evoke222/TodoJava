@@ -30,10 +30,34 @@
             android:id="@+id/tvAddTaskTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Add a New Task"
+            android:text="Add a New Item"
             android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <RadioGroup
+            android:id="@+id/rgTaskType"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvAddTaskTitle">
+
+            <RadioButton
+                android:id="@+id/rbTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Task"
+                android:checked="true"/>
+
+            <RadioButton
+                android:id="@+id/rbEvent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Event" />
+        </RadioGroup>
 
         <EditText
             android:id="@+id/etTaskTitle"
@@ -44,7 +68,7 @@
             android:inputType="textCapSentences"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvAddTaskTitle" />
+            app:layout_constraintTop_toBottomOf="@id/rgTaskType" />
 
         <EditText
             android:id="@+id/etTaskDueDate"
@@ -72,16 +96,36 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/etTaskDueDate" />
 
+        <TextView
+            android:id="@+id/tvShareWith"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Share with:"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/etTaskDetails" />
+
+        <Spinner
+            android:id="@+id/spinnerShareWith"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/tvShareWith"
+            app:layout_constraintTop_toTopOf="@id/tvShareWith"
+            app:layout_constraintBottom_toBottomOf="@id/tvShareWith" />
+
         <Button
             android:id="@+id/buttonSaveTask"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:backgroundTint="@color/material_dynamic_primary60"
-            android:text="Save Task"
+            android:text="Save Item"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/etTaskDetails" />
+            app:layout_constraintTop_toBottomOf="@id/spinnerShareWith" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

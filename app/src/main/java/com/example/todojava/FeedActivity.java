@@ -3,8 +3,12 @@ package com.example.todojava;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,7 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.todojava.Friends.FriendsActivity;
 import com.example.todojava.tasks.AddTaskActivity;
-import com.example.todojava.tasks.OnTaskInteractionListener; // <-- ADD THIS IMPORT
+import com.example.todojava.tasks.OnTaskInteractionListener;
 import com.example.todojava.tasks.Task;
 import com.example.todojava.tasks.TaskAdapter;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -27,33 +31,28 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
-// --- STEP 1: IMPLEMENT THE NEW INTERFACE ---
 public class FeedActivity extends AppCompatActivity implements OnTaskInteractionListener {
 
     private static final String TAG = "FeedActivity";
 
-    // Firebase services
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private FirebaseUser currentUser;
     private ListenerRegistration tasksListener;
 
-    // Views from the layout
     private ImageView ivProfilePicture;
     private TextView tvUsername;
-
     private ImageButton buttonAddFriend;
-
-    // Views and Adapter for the Task List
     private RecyclerView tasksRecyclerView;
     private TaskAdapter taskAdapter;
     private List<Task> taskList;
     private FloatingActionButton fabAddTask;
-
     private ImageButton buttonSettings;
-
+    private Spinner filterSpinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,16 +63,16 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         db = FirebaseFirestore.getInstance();
         currentUser = mAuth.getCurrentUser();
 
-        // Initialize views
         ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvUsername = findViewById(R.id.tvUsername);
         tasksRecyclerView = findViewById(R.id.tasksRecyclerView);
         fabAddTask = findViewById(R.id.fabAddTask);
         buttonSettings = findViewById(R.id.buttonSettings);
         buttonAddFriend = findViewById(R.id.buttonAddFriend);
+        filterSpinner = findViewById(R.id.filterSpinner);
 
-        // Setup the RecyclerView
         setupRecyclerView();
+        setupFilterSpinner();
 
         if (currentUser == null) {
             goToLogin();
@@ -85,10 +84,7 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             startActivity(intent);
         });
 
-
-
         buttonSettings.setOnClickListener(v -> {
-            // Create an Intent to open SettingsActivity
             Intent intent = new Intent(FeedActivity.this, SettingsActivity.class);
             startActivity(intent);
         });
@@ -113,15 +109,30 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
 
     private void setupRecyclerView() {
         taskList = new ArrayList<>();
-        // --- STEP 2: MODIFY THIS LINE ---
-        // Pass 'this' as the listener because FeedActivity now implements OnTaskInteractionListener
         taskAdapter = new TaskAdapter(taskList, this);
         tasksRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         tasksRecyclerView.setAdapter(taskAdapter);
     }
 
+    private void setupFilterSpinner() {
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.filter_options, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        filterSpinner.setAdapter(adapter);
+
+        filterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                loadTasks();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+    }
+
     private void loadUserProfile() {
-        // This method remains unchanged
         db.collection("users").document(currentUser.getUid()).get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -142,27 +153,49 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     }
 
     private void loadTasks() {
-        // This method remains unchanged
         if (currentUser == null) {
             Log.w(TAG, "Cannot load tasks, user is not logged in.");
             return;
         }
-        tasksListener = db.collection("tasks")
-                .whereEqualTo("owner_uid", currentUser.getUid())
-                .orderBy("created_at", Query.Direction.DESCENDING)
-                .addSnapshotListener((snapshots, e) -> {
-                    if (e != null) {
-                        Log.w(TAG, "Listen failed.", e);
-                        return;
-                    }
-                    List<Task> newTaskList = new ArrayList<>();
-                    for (QueryDocumentSnapshot doc : snapshots) {
-                        Task task = doc.toObject(Task.class);
-                        newTaskList.add(task);
-                    }
-                    Log.d(TAG, "Successfully loaded " + newTaskList.size() + " tasks in real-time.");
-                    taskAdapter.updateTasks(newTaskList);
+
+        if (tasksListener != null) {
+            tasksListener.remove();
+        }
+
+        Query query = db.collection("items")
+                .whereEqualTo("owner_uid", currentUser.getUid());
+
+        String selectedFilter = filterSpinner.getSelectedItem().toString();
+
+        if (selectedFilter.equals("Tasks")) {
+            query = query.whereEqualTo("type", "task");
+        } else if (selectedFilter.equals("Events")) {
+            query = query.whereEqualTo("type", "event");
+        } else {
+            query = query.orderBy("created_at", Query.Direction.DESCENDING);
+        }
+
+        tasksListener = query.addSnapshotListener((snapshots, e) -> {
+            if (e != null) {
+                Log.w(TAG, "Listen failed.", e);
+                return;
+            }
+            List<Task> newTaskList = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : snapshots) {
+                Task task = doc.toObject(Task.class);
+                newTaskList.add(task);
+            }
+
+            if (!selectedFilter.equals("All")) {
+                Collections.sort(newTaskList, (t1, t2) -> {
+                    if (t1.getCreated_at() == null || t2.getCreated_at() == null) return 0;
+                    return t2.getCreated_at().compareTo(t1.getCreated_at());
                 });
+            }
+
+            Log.d(TAG, "Successfully loaded " + newTaskList.size() + " items in real-time.");
+            taskAdapter.updateTasks(newTaskList);
+        });
     }
 
     private void goToLogin() {
@@ -171,7 +204,6 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         finish();
     }
 
-    // --- STEP 3: ADD THE INTERFACE METHOD IMPLEMENTATION ---
     @Override
     public void onTaskChecked(Task task, boolean isChecked) {
         if (currentUser == null || task.getDocumentId() == null) {
@@ -179,34 +211,22 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             return;
         }
 
-        Log.d(TAG, "Updating task: " + task.getDocumentId() + " to completed=" + isChecked);
-
-        // Get the reference to the document in Firestore and update the 'completed' field
-        db.collection("tasks").document(task.getDocumentId())
+        db.collection("items").document(task.getDocumentId())
                 .update("completed", isChecked)
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Task 'completed' field successfully updated!"))
                 .addOnFailureListener(e -> Log.w(TAG, "Error updating task", e));
     }
 
-    // --- ADD THIS MISSING METHOD TO FIX THE ERROR ---
     @Override
     public void onTaskDeleted(Task task) {
-        // First, check if the user is logged in and the task has a valid ID
         if (currentUser == null || task.getDocumentId() == null) {
             Log.w(TAG, "User not logged in or Task ID is null, cannot delete task.");
             return;
         }
 
-        Log.d(TAG, "Deleting task: " + task.getDocumentId());
-
-        // Get the reference to the document in Firestore and delete it
-        db.collection("tasks").document(task.getDocumentId())
+        db.collection("items").document(task.getDocumentId())
                 .delete()
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Task successfully deleted!"))
                 .addOnFailureListener(e -> Log.w(TAG, "Error deleting task", e));
-
-        // You don't need to manually remove the task from the list here.
-        // Your real-time listener in loadTasks() will automatically see the change
-        // in Firestore and send an updated list to the adapter, which will refresh the UI.
     }
 }
