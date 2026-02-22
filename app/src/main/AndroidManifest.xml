@@ -29,6 +29,10 @@
             android:exported="false"
             android:theme="@style/Theme.TodoJava.DialogActivity" />
         <activity
+            android:name=".SharedItemsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TodoJava.DialogActivity" />
+        <activity
             android:name=".LoginActivity"
             android:exported="false" />
         <activity

@@ -127,13 +127,11 @@ public class FriendsActivity extends AppCompatActivity implements FriendRequestA
                         }
 
                         tvNoRequests.setVisibility(requestList.isEmpty() ? View.VISIBLE : View.GONE);
-                        requestsRecyclerView.setVisibility(requestList.isEmpty() ? View.VISIBLE : View.GONE);
+                        requestsRecyclerView.setVisibility(requestList.isEmpty() ? View.GONE : View.VISIBLE);
 
                         if (!fromUserIds.isEmpty()) {
-                            // Use the new, corrected method
                             loadUsernamesForRequests(fromUserIds);
                         } else {
-                            // If there are no requests, make sure the adapter is notified to clear the view
                             requestAdapter.notifyDataSetChanged();
                         }
                     } else {

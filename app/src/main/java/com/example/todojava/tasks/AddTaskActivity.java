@@ -15,15 +15,16 @@ import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.todojava.R;
 import com.example.todojava.models.User;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -100,26 +101,42 @@ public class AddTaskActivity extends AppCompatActivity {
     private void loadFriends() {
         if (currentUser == null) return;
 
-        db.collection("users").document(currentUser.getUid()).collection("friends")
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        friendsList.clear();
+        db.collection("users").document(currentUser.getUid()).get().addOnSuccessListener(documentSnapshot -> {
+            if (!documentSnapshot.exists()) {
+                Log.w(TAG, "User document not found.");
+                return;
+            }
 
-                        User noneUser = new User();
-                        noneUser.setUsername("None");
-                        noneUser.setUid("");
-                        friendsList.add(noneUser);
+            List<String> friendUids = (List<String>) documentSnapshot.get("friends");
 
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            User friend = document.toObject(User.class);
-                            friendsList.add(friend);
-                        }
-                        friendsAdapter.notifyDataSetChanged();
-                    } else {
-                        Log.w(TAG, "Error getting friends.", task.getException());
+            friendsList.clear();
+            User noneUser = new User();
+            noneUser.setUsername("None");
+            noneUser.setUid("");
+            friendsList.add(noneUser);
+
+            if (friendUids == null || friendUids.isEmpty()) {
+                friendsAdapter.notifyDataSetChanged();
+                return;
+            }
+
+            List<Task<DocumentSnapshot>> friendTasks = new ArrayList<>();
+            for (String friendUid : friendUids) {
+                friendTasks.add(db.collection("users").document(friendUid).get());
+            }
+
+            Tasks.whenAllSuccess(friendTasks).addOnSuccessListener(objects -> {
+                for (Object object : objects) {
+                    DocumentSnapshot doc = (DocumentSnapshot) object;
+                    User friend = doc.toObject(User.class);
+                    if (friend != null) {
+                        friend.setUid(doc.getId()); // Manually set the UID from the document ID
+                        friendsList.add(friend);
                     }
-                });
+                }
+                friendsAdapter.notifyDataSetChanged();
+            });
+        }).addOnFailureListener(e -> Log.w(TAG, "Error getting friends list.", e));
     }
 
     private void showDatePickerDialog() {
@@ -182,7 +199,8 @@ public class AddTaskActivity extends AppCompatActivity {
         item.put("created_at", new Date());
         item.put("type", type);
 
-        if (selectedFriend != null && !selectedFriend.getUid().isEmpty()) {
+        // This condition will now work correctly
+        if (selectedFriend != null && selectedFriend.getUid() != null && !selectedFriend.getUid().isEmpty()) {
             item.put("sharedWithUid", selectedFriend.getUid());
             item.put("shareStatus", "pending");
         }

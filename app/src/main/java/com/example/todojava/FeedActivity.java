@@ -32,8 +32,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FeedActivity extends AppCompatActivity implements OnTaskInteractionListener {
 
@@ -42,14 +43,22 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private FirebaseUser currentUser;
-    private ListenerRegistration tasksListener;
+
+    // Listeners for real-time updates
+    private ListenerRegistration ownedItemsListener;
+    private ListenerRegistration sharedItemsListener;
 
     private ImageView ivProfilePicture;
     private TextView tvUsername;
     private ImageButton buttonAddFriend;
+    private ImageButton buttonSharedItems;
     private RecyclerView tasksRecyclerView;
     private TaskAdapter taskAdapter;
-    private List<Task> taskList;
+
+    // Separate lists for owned and shared items
+    private List<Task> ownedTaskList = new ArrayList<>();
+    private List<Task> sharedTaskList = new ArrayList<>();
+
     private FloatingActionButton fabAddTask;
     private ImageButton buttonSettings;
     private Spinner filterSpinner;
@@ -69,6 +78,7 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         fabAddTask = findViewById(R.id.fabAddTask);
         buttonSettings = findViewById(R.id.buttonSettings);
         buttonAddFriend = findViewById(R.id.buttonAddFriend);
+        buttonSharedItems = findViewById(R.id.buttonSharedItems);
         filterSpinner = findViewById(R.id.filterSpinner);
 
         setupRecyclerView();
@@ -94,6 +104,11 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             startActivity(intent);
         });
 
+        buttonSharedItems.setOnClickListener(v -> {
+            Intent intent = new Intent(FeedActivity.this, SharedItemsActivity.class);
+            startActivity(intent);
+        });
+
         loadUserProfile();
         loadTasks();
     }
@@ -101,15 +116,19 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     @Override
     protected void onStop() {
         super.onStop();
-        if (tasksListener != null) {
-            tasksListener.remove();
-            Log.d(TAG, "Tasks listener removed.");
+        // Remove listeners to prevent memory leaks
+        if (ownedItemsListener != null) {
+            ownedItemsListener.remove();
+        }
+        if (sharedItemsListener != null) {
+            sharedItemsListener.remove();
         }
     }
 
     private void setupRecyclerView() {
-        taskList = new ArrayList<>();
-        taskAdapter = new TaskAdapter(taskList, this);
+        // The adapter is initialized with an empty list.
+        // It will be updated by loadTasks().
+        taskAdapter = new TaskAdapter(new ArrayList<>(), this);
         tasksRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         tasksRecyclerView.setAdapter(taskAdapter);
     }
@@ -123,7 +142,8 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         filterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                loadTasks();
+                // When filter changes, re-run the filtering and update the adapter
+                updateAndFilterTaskList();
             }
 
             @Override
@@ -158,44 +178,92 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             return;
         }
 
-        if (tasksListener != null) {
-            tasksListener.remove();
-        }
+        // Clean up previous listeners if they exist
+        if (ownedItemsListener != null) ownedItemsListener.remove();
+        if (sharedItemsListener != null) sharedItemsListener.remove();
 
-        Query query = db.collection("items")
+        // Query 1: Items owned by the current user
+        Query ownedQuery = db.collection("items")
                 .whereEqualTo("owner_uid", currentUser.getUid());
 
-        String selectedFilter = filterSpinner.getSelectedItem().toString();
-
-        if (selectedFilter.equals("Tasks")) {
-            query = query.whereEqualTo("type", "task");
-        } else if (selectedFilter.equals("Events")) {
-            query = query.whereEqualTo("type", "event");
-        } else {
-            query = query.orderBy("created_at", Query.Direction.DESCENDING);
-        }
-
-        tasksListener = query.addSnapshotListener((snapshots, e) -> {
+        ownedItemsListener = ownedQuery.addSnapshotListener((snapshots, e) -> {
             if (e != null) {
-                Log.w(TAG, "Listen failed.", e);
+                Log.w(TAG, "Listen failed for owned items.", e);
                 return;
             }
-            List<Task> newTaskList = new ArrayList<>();
-            for (QueryDocumentSnapshot doc : snapshots) {
-                Task task = doc.toObject(Task.class);
-                newTaskList.add(task);
+            ownedTaskList.clear();
+            if (snapshots != null) {
+                for (QueryDocumentSnapshot doc : snapshots) {
+                    Task task = doc.toObject(Task.class);
+                    task.setDocumentId(doc.getId()); // Manually set the document ID
+                    ownedTaskList.add(task);
+                }
             }
-
-            if (!selectedFilter.equals("All")) {
-                Collections.sort(newTaskList, (t1, t2) -> {
-                    if (t1.getCreated_at() == null || t2.getCreated_at() == null) return 0;
-                    return t2.getCreated_at().compareTo(t1.getCreated_at());
-                });
-            }
-
-            Log.d(TAG, "Successfully loaded " + newTaskList.size() + " items in real-time.");
-            taskAdapter.updateTasks(newTaskList);
+            Log.d(TAG, "Owned items updated: " + ownedTaskList.size());
+            updateAndFilterTaskList();
         });
+
+        // Query 2: Items shared with the current user that are "accepted"
+        Query sharedQuery = db.collection("items")
+                .whereEqualTo("sharedWithUid", currentUser.getUid())
+                .whereEqualTo("shareStatus", "accepted");
+
+        sharedItemsListener = sharedQuery.addSnapshotListener((snapshots, e) -> {
+            if (e != null) {
+                Log.w(TAG, "Listen failed for shared items.", e);
+                return;
+            }
+            sharedTaskList.clear();
+            if (snapshots != null) {
+                for (QueryDocumentSnapshot doc : snapshots) {
+                    Task task = doc.toObject(Task.class);
+                    task.setDocumentId(doc.getId()); // Manually set the document ID
+                    sharedTaskList.add(task);
+                }
+            }
+            Log.d(TAG, "Shared items updated: " + sharedTaskList.size());
+            updateAndFilterTaskList();
+        });
+    }
+
+    private void updateAndFilterTaskList() {
+        // Use a Map to combine lists and prevent duplicates
+        Map<String, Task> taskMap = new HashMap<>();
+        for (Task task : ownedTaskList) {
+            if (task.getDocumentId() != null) { // Null check to prevent crash
+                taskMap.put(task.getDocumentId(), task);
+            }
+        }
+        for (Task task : sharedTaskList) {
+            if (task.getDocumentId() != null) { // Null check to prevent crash
+                taskMap.put(task.getDocumentId(), task);
+            }
+        }
+        List<Task> combinedList = new ArrayList<>(taskMap.values());
+
+        // Apply filtering based on the spinner selection
+        String selectedFilter = filterSpinner.getSelectedItem().toString();
+        List<Task> filteredList = new ArrayList<>();
+
+        if (selectedFilter.equals("All")) {
+            filteredList.addAll(combinedList);
+        } else {
+            String filterType = selectedFilter.equals("Tasks") ? "task" : "event";
+            for (Task task : combinedList) {
+                if (filterType.equals(task.getType())) {
+                    filteredList.add(task);
+                }
+            }
+        }
+
+        // Sort the final list by creation date
+        Collections.sort(filteredList, (t1, t2) -> {
+            if (t1.getCreated_at() == null || t2.getCreated_at() == null) return 0;
+            return t2.getCreated_at().compareTo(t1.getCreated_at());
+        });
+
+        Log.d(TAG, "Updating adapter with " + filteredList.size() + " items.");
+        taskAdapter.updateTasks(filteredList);
     }
 
     private void goToLogin() {
@@ -210,7 +278,6 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             Log.w(TAG, "User not logged in or Task ID is null, cannot update task.");
             return;
         }
-
         db.collection("items").document(task.getDocumentId())
                 .update("completed", isChecked)
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Task 'completed' field successfully updated!"))
@@ -223,7 +290,6 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             Log.w(TAG, "User not logged in or Task ID is null, cannot delete task.");
             return;
         }
-
         db.collection("items").document(task.getDocumentId())
                 .delete()
                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Task successfully deleted!"))
