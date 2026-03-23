@@ -1,8 +1,13 @@
 package com.example.todojava.tasks;
 
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -19,8 +24,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.todojava.R;
 import com.example.todojava.models.User;
+import com.example.todojava.notifications.TaskReminderReceiver;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.android.material.datepicker.CalendarConstraints;
+import com.google.android.material.datepicker.DateValidatorPointForward;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -34,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class AddTaskActivity extends AppCompatActivity {
 
@@ -73,7 +85,7 @@ public class AddTaskActivity extends AppCompatActivity {
         setupFriendSpinner();
         loadFriends();
 
-        etTaskDueDate.setOnClickListener(v -> showDatePickerDialog());
+        etTaskDueDate.setOnClickListener(v -> showMaterialDatePicker());
 
         buttonSaveTask.setOnClickListener(v -> saveTask());
 
@@ -102,13 +114,8 @@ public class AddTaskActivity extends AppCompatActivity {
         if (currentUser == null) return;
 
         db.collection("users").document(currentUser.getUid()).get().addOnSuccessListener(documentSnapshot -> {
-            if (!documentSnapshot.exists()) {
-                Log.w(TAG, "User document not found.");
-                return;
-            }
-
+            if (!documentSnapshot.exists()) return;
             List<String> friendUids = (List<String>) documentSnapshot.get("friends");
-
             friendsList.clear();
             User noneUser = new User();
             noneUser.setUsername("None");
@@ -121,50 +128,61 @@ public class AddTaskActivity extends AppCompatActivity {
             }
 
             List<Task<DocumentSnapshot>> friendTasks = new ArrayList<>();
-            for (String friendUid : friendUids) {
-                friendTasks.add(db.collection("users").document(friendUid).get());
-            }
+            for (String friendUid : friendUids) friendTasks.add(db.collection("users").document(friendUid).get());
 
             Tasks.whenAllSuccess(friendTasks).addOnSuccessListener(objects -> {
                 for (Object object : objects) {
                     DocumentSnapshot doc = (DocumentSnapshot) object;
                     User friend = doc.toObject(User.class);
                     if (friend != null) {
-                        friend.setUid(doc.getId()); // Manually set the UID from the document ID
+                        friend.setUid(doc.getId());
                         friendsList.add(friend);
                     }
                 }
                 friendsAdapter.notifyDataSetChanged();
             });
-        }).addOnFailureListener(e -> Log.w(TAG, "Error getting friends list.", e));
+        });
     }
 
-    private void showDatePickerDialog() {
-        final Calendar c = Calendar.getInstance();
-        int year = c.get(Calendar.YEAR);
-        int month = c.get(Calendar.MONTH);
-        int day = c.get(Calendar.DAY_OF_MONTH);
+    private void showMaterialDatePicker() {
+        CalendarConstraints constraintsBuilder = new CalendarConstraints.Builder()
+                .setValidator(DateValidatorPointForward.now())
+                .build();
 
-        new DatePickerDialog(this,
-                (view, year1, monthOfYear, dayOfMonth) -> {
-                    selectedDueDate = Calendar.getInstance();
-                    selectedDueDate.set(year1, monthOfYear, dayOfMonth);
-                    showTimePickerDialog();
-                }, year, month, day).show();
+        MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                .setTitleText("Select Due Date")
+                .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                .setCalendarConstraints(constraintsBuilder)
+                .build();
+
+        datePicker.addOnPositiveButtonClickListener(selection -> {
+            // Use local timezone for the Calendar object to match TimePicker and formatter
+            selectedDueDate = Calendar.getInstance();
+            selectedDueDate.setTimeInMillis(selection);
+            showMaterialTimePicker();
+        });
+
+        datePicker.show(getSupportFragmentManager(), "DATE_PICKER");
     }
 
-    private void showTimePickerDialog() {
-        final Calendar c = Calendar.getInstance();
-        int hour = c.get(Calendar.HOUR_OF_DAY);
-        int minute = c.get(Calendar.MINUTE);
+    private void showMaterialTimePicker() {
+        MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
+                .setTimeFormat(TimeFormat.CLOCK_12H)
+                .setHour(12)
+                .setMinute(0)
+                .setTitleText("Select Time")
+                .build();
 
-        new TimePickerDialog(this,
-                (view, hourOfDay, minute1) -> {
-                    selectedDueDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                    selectedDueDate.set(Calendar.MINUTE, minute1);
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
-                    etTaskDueDate.setText(sdf.format(selectedDueDate.getTime()));
-                }, hour, minute, false).show();
+        timePicker.addOnPositiveButtonClickListener(v -> {
+            selectedDueDate.set(Calendar.HOUR_OF_DAY, timePicker.getHour());
+            selectedDueDate.set(Calendar.MINUTE, timePicker.getMinute());
+            
+            // Format using local time to match CalendarActivity filtering
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+            etTaskDueDate.setText(sdf.format(selectedDueDate.getTime()));
+        });
+
+        timePicker.show(getSupportFragmentManager(), "TIME_PICKER");
     }
 
     private void saveTask() {
@@ -177,15 +195,9 @@ public class AddTaskActivity extends AppCompatActivity {
             return;
         }
 
-        if (currentUser == null) {
-            Toast.makeText(this, "Error: User not logged in", Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "Attempted to save task, but user is null.");
-            return;
-        }
+        if (currentUser == null) return;
 
         buttonSaveTask.setEnabled(false);
-        Toast.makeText(this, "Saving...", Toast.LENGTH_SHORT).show();
-
         int selectedId = rgTaskType.getCheckedRadioButtonId();
         RadioButton selectedRadioButton = findViewById(selectedId);
         String type = selectedRadioButton.getText().toString().toLowerCase();
@@ -199,7 +211,6 @@ public class AddTaskActivity extends AppCompatActivity {
         item.put("created_at", new Date());
         item.put("type", type);
 
-        // This condition will now work correctly
         if (selectedFriend != null && selectedFriend.getUid() != null && !selectedFriend.getUid().isEmpty()) {
             item.put("sharedWithUid", selectedFriend.getUid());
             item.put("shareStatus", "pending");
@@ -208,14 +219,42 @@ public class AddTaskActivity extends AppCompatActivity {
         db.collection("items")
                 .add(item)
                 .addOnSuccessListener(documentReference -> {
-                    Log.d(TAG, "DocumentSnapshot written with ID: " + documentReference.getId());
+                    scheduleReminder(taskTitle, taskDetails);
                     Toast.makeText(AddTaskActivity.this, "Item saved!", Toast.LENGTH_SHORT).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {
-                    Log.w(TAG, "Error adding document", e);
-                    Toast.makeText(AddTaskActivity.this, "Error saving item", Toast.LENGTH_SHORT).show();
                     buttonSaveTask.setEnabled(true);
                 });
+    }
+
+    private void scheduleReminder(String title, String details) {
+        SharedPreferences prefs = getSharedPreferences("theme_prefs", Context.MODE_PRIVATE);
+        if (!prefs.getBoolean("notifications_enabled", true)) return;
+        if (selectedDueDate == null) return;
+
+        long reminderTime = selectedDueDate.getTimeInMillis() - (5 * 60 * 1000);
+        if (reminderTime <= System.currentTimeMillis()) {
+            Log.d(TAG, "Reminder time is in the past, skipping.");
+            return;
+        }
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, TaskReminderReceiver.class);
+        intent.putExtra("task_title", title);
+        intent.putExtra("task_details", details);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, (int)System.currentTimeMillis(), intent, PendingIntent.FLAG_IMMUTABLE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent);
+            } else {
+                Intent permissionIntent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                startActivity(permissionIntent);
+            }
+        } else {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent);
+        }
     }
 }

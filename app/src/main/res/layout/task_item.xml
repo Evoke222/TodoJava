@@ -31,6 +31,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:textSize="18sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toStartOf="@id/button_delete_task"
             app:layout_constraintStart_toEndOf="@id/taskCheckBox"
             app:layout_constraintTop_toTopOf="parent"
@@ -42,6 +43,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textSize="14sp"
+            android:textColor="?attr/colorError"
             app:layout_constraintStart_toStartOf="@id/taskTitleTextView"
             app:layout_constraintEnd_toEndOf="@id/taskTitleTextView"
             app:layout_constraintTop_toBottomOf="@id/taskTitleTextView"
@@ -58,6 +60,42 @@
             app:layout_constraintTop_toBottomOf="@id/taskDueDateTextView"
             tools:text="Here are some more details about the task." />
 
+        <LinearLayout
+            android:id="@+id/layoutMembers"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            app:layout_constraintStart_toStartOf="@id/taskTitleTextView"
+            app:layout_constraintEnd_toStartOf="@id/taskTypeTextView"
+            app:layout_constraintTop_toBottomOf="@id/taskDetailsTextView">
+
+            <ImageView
+                android:id="@+id/ivOwner"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_default_profile"
+                android:contentDescription="Owner" />
+
+            <ImageView
+                android:id="@+id/ivSharedWith"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="-8dp"
+                android:src="@drawable/ic_default_profile"
+                android:visibility="gone"
+                android:contentDescription="Shared with" />
+
+            <TextView
+                android:id="@+id/tvMemberNames"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textSize="12sp"
+                tools:text="You + John" />
+        </LinearLayout>
+
         <ImageButton
             android:id="@+id/button_delete_task"
             android:layout_width="wrap_content"
@@ -67,8 +105,7 @@
             android:contentDescription="Delete task"
             app:tint="?android:attr/textColorSecondary"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/taskTypeTextView"
@@ -77,6 +114,8 @@
             android:layout_marginTop="8dp"
             android:textSize="12sp"
             android:textStyle="italic"
+            android:padding="4dp"
+            android:background="@drawable/bg_type_tag"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             tools:text="Task" />

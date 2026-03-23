@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -59,42 +58,57 @@
                 android:text="Event" />
         </RadioGroup>
 
-        <EditText
-            android:id="@+id/etTaskTitle"
-            android:layout_width="0dp"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutTaskTitle"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:hint="What do you need to do?"
-            android:inputType="textCapSentences"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/rgTaskType" />
+            app:layout_constraintTop_toBottomOf="@id/rgTaskType">
 
-        <EditText
-            android:id="@+id/etTaskDueDate"
-            android:layout_width="0dp"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etTaskTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapSentences" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutTaskDueDate"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:hint="When is it due?"
-            android:inputType="none"
-            android:focusable="false"
-            android:clickable="true"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/etTaskTitle" />
+            app:layout_constraintTop_toBottomOf="@id/layoutTaskTitle">
 
-        <EditText
-            android:id="@+id/etTaskDetails"
-            android:layout_width="0dp"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etTaskDueDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:focusable="false"
+                android:clickable="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutTaskDetails"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:gravity="top"
             android:hint="Add more details"
-            android:inputType="textMultiLine"
-            android:minLines="3"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/etTaskDueDate" />
+            app:layout_constraintTop_toBottomOf="@id/layoutTaskDueDate">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etTaskDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:inputType="textMultiLine"
+                android:minLines="3" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
             android:id="@+id/tvShareWith"
@@ -104,7 +118,7 @@
             android:text="Share with:"
             android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/etTaskDetails" />
+            app:layout_constraintTop_toBottomOf="@id/layoutTaskDetails" />
 
         <Spinner
             android:id="@+id/spinnerShareWith"
@@ -116,15 +130,12 @@
             app:layout_constraintTop_toTopOf="@id/tvShareWith"
             app:layout_constraintBottom_toBottomOf="@id/tvShareWith" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonSaveTask"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:backgroundTint="@color/material_dynamic_primary60"
+            android:layout_marginTop="24dp"
             android:text="Save Item"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/spinnerShareWith" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

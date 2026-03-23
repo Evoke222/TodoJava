@@ -1,6 +1,8 @@
 package com.example.todojava;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -11,6 +13,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -23,13 +26,24 @@ public class LoginActivity extends AppCompatActivity {
     private Button loginButton;
     private TextView registerTextView;
 
-    FirebaseAuth auth;
+    private FirebaseAuth auth;
+    private static final String PREFS_NAME = "theme_prefs";
+    private static final String KEY_DARK_MODE = "is_dark_mode";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // 1. Apply theme preference immediately before super.onCreate
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        boolean isDarkMode = sharedPreferences.getBoolean(KEY_DARK_MODE, false);
+        if (isDarkMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
+
         super.onCreate(savedInstanceState);
 
-        // Initialize Firebase Auth first
+        // Initialize Firebase Auth
         auth = FirebaseAuth.getInstance();
 
         if (auth.getCurrentUser() != null) {
@@ -37,83 +51,60 @@ public class LoginActivity extends AppCompatActivity {
             Intent intent = new Intent(LoginActivity.this, FeedActivity.class);
             startActivity(intent);
             finish();
+            return;
         }
-
 
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_login);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        
+        View mainView = findViewById(R.id.main);
+        if (mainView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
-        // Initialize the views using findViewById
         emailEditText = findViewById(R.id.editTextEmail);
         passwordEditText = findViewById(R.id.editTextPassword);
         loginButton = findViewById(R.id.buttonLogin);
         registerTextView = findViewById(R.id.textViewRegister);
 
-        // Set the OnClickListener for the login button
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                performLogin();
-            }
-        });
+        loginButton.setOnClickListener(v -> performLogin());
 
-        // Add OnClickListener for the register TextView
-        registerTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Navigate to the RegistrationActivity
-                Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
-                startActivity(intent);
-            }
+        registerTextView.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, RegistrationActivity.class);
+            startActivity(intent);
         });
     }
-
 
     private void performLogin() {
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
 
-        // Validate input
         if (email.isEmpty() || password.isEmpty()) {
-            Log.w("LoginActivity", "Empty email and/or password field");
-            Toast.makeText(LoginActivity.this, "Please fill in all fields", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_LONG).show();
             return;
         }
 
-        // Perform Firebase authentication
         auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Sign in success, update UI with the signed-in user's information
-                        Log.i("LoginActivity", "signInWithEmail:success");
                         startFeedActivity(true);
                     } else {
-                        // If sign in fails, display a message to the user.
-                        Log.w("LoginActivity", "signInWithEmail:failure", task.getException());
-
-                        String errorMessage = "Authentication failed. ";
-
-                        if (task.getException() != null) {
-                            errorMessage += task.getException().getMessage();
-                        }
-
-                        Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                        String errorMessage = "Authentication failed. " + (task.getException() != null ? task.getException().getMessage() : "");
+                        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
                     }
                 });
     }
 
     private void startFeedActivity(boolean sendToast) {
         if(sendToast)
-            Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
 
-        // Navigate to FeedActivity
-        Intent intent = new Intent(LoginActivity.this, FeedActivity.class);
+        Intent intent = new Intent(this, FeedActivity.class);
         startActivity(intent);
-        finish(); // Important: finish LoginActivity so user can't navigate back to it
+        finish();
     }
 }

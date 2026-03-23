@@ -1,18 +1,23 @@
 package com.example.todojava.tasks;
 
 import android.graphics.Paint;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.todojava.R;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.List;
 
@@ -20,6 +25,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     private List<Task> taskList;
     private OnTaskInteractionListener listener;
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private String currentUid = FirebaseAuth.getInstance().getUid();
 
     public TaskAdapter(List<Task> taskList, OnTaskInteractionListener listener) {
         this.taskList = taskList;
@@ -36,7 +43,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     @Override
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         Task task = taskList.get(position);
-        holder.bind(task, listener);
+        holder.bind(task, listener, db, currentUid);
     }
 
     @Override
@@ -57,6 +64,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         TextView tvTaskType;
         CheckBox cbTaskCompleted;
         ImageButton deleteButton;
+        
+        ImageView ivOwner;
+        ImageView ivSharedWith;
+        TextView tvMemberNames;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -66,19 +77,30 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvTaskType = itemView.findViewById(R.id.taskTypeTextView);
             cbTaskCompleted = itemView.findViewById(R.id.taskCheckBox);
             deleteButton = itemView.findViewById(R.id.button_delete_task);
+            
+            ivOwner = itemView.findViewById(R.id.ivOwner);
+            ivSharedWith = itemView.findViewById(R.id.ivSharedWith);
+            tvMemberNames = itemView.findViewById(R.id.tvMemberNames);
         }
 
-        public void bind(final Task task, final OnTaskInteractionListener listener) {
+        public void bind(final Task task, final OnTaskInteractionListener listener, FirebaseFirestore db, String currentUid) {
             tvTaskTitle.setText(task.getTitle());
             tvTaskDueDate.setText(task.getDueDate());
             tvTaskDetails.setText(task.getDetails());
             cbTaskCompleted.setChecked(task.isCompleted());
 
+            // Reset visibility
+            ivSharedWith.setVisibility(View.GONE);
+            tvMemberNames.setText("");
+
+            // Load Owner and Shared With Info
+            loadMembersInfo(task, db, currentUid);
+
             if (task.getType() != null && !task.getType().isEmpty()) {
                 String type = task.getType();
                 tvTaskType.setText(type.substring(0, 1).toUpperCase() + type.substring(1));
             } else {
-                tvTaskType.setText("Task"); // Default to task if not specified
+                tvTaskType.setText("Task");
             }
 
             if (task.isCompleted()) {
@@ -105,6 +127,46 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                             .show();
                 }
             });
+        }
+
+        private void loadMembersInfo(Task task, FirebaseFirestore db, String currentUid) {
+            final String[] ownerName = {"..."};
+            final String[] sharedName = {""};
+
+            // Load Owner
+            db.collection("users").document(task.getOwner_uid()).get().addOnSuccessListener(doc -> {
+                if (doc.exists()) {
+                    String username = doc.getString("username");
+                    String pfp = doc.getString("pfp_url");
+                    ownerName[0] = (task.getOwner_uid().equals(currentUid)) ? "You" : username;
+                    
+                    Glide.with(itemView.getContext()).load(pfp).placeholder(R.drawable.ic_default_profile).circleCrop().into(ivOwner);
+                    updateMemberNames(ownerName[0], sharedName[0]);
+                }
+            });
+
+            // Load Shared With (if exists)
+            if (task.getSharedWithUid() != null && !task.getSharedWithUid().isEmpty()) {
+                ivSharedWith.setVisibility(View.VISIBLE);
+                db.collection("users").document(task.getSharedWithUid()).get().addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        String username = doc.getString("username");
+                        String pfp = doc.getString("pfp_url");
+                        sharedName[0] = (task.getSharedWithUid().equals(currentUid)) ? "You" : username;
+
+                        Glide.with(itemView.getContext()).load(pfp).placeholder(R.drawable.ic_default_profile).circleCrop().into(ivSharedWith);
+                        updateMemberNames(ownerName[0], sharedName[0]);
+                    }
+                });
+            }
+        }
+
+        private void updateMemberNames(String owner, String shared) {
+            if (shared.isEmpty()) {
+                tvMemberNames.setText(owner);
+            } else {
+                tvMemberNames.setText(owner + " + " + shared);
+            }
         }
     }
 }

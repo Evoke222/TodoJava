@@ -1,140 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 1. Use a FrameLayout as the root to overlay views -->
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#80000000"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:layout_margin="24dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp"
     tools:context=".Friends.FriendsActivity">
 
-    <!-- Your existing MaterialCardView -->
-    <com.google.android.material.card.MaterialCardView
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="24dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="8dp">
+        android:padding="24dp">
 
-        <!-- The LinearLayout containing all your content remains the same -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <ImageButton
+            android:id="@+id/buttonClose"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="24dp">
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Close"
+            android:src="@drawable/ic_close"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <!-- ... All your existing content (Add Friend, Requests, Friends List) goes here ... -->
-            <!-- I'll just show the start and end for brevity -->
+        <TextView
+            android:id="@+id/tvFriendsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Friends"
+            android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <!-- Section for Adding a Friend -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Add a Friend"
-                android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-                android:layout_marginBottom="16dp"/>
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutShareId"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="8dp"
+            android:hint="Enter Share ID"
+            app:layout_constraintEnd_toStartOf="@id/buttonAddFriend"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvFriendsTitle">
 
-            <EditText
+            <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editTextShareId"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Enter friend's Share ID"
                 android:inputType="textCapCharacters"
                 android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-            <Button
-                android:id="@+id/buttonAddFriend"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Send Request"/>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonAddFriend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add"
+            app:layout_constraintBottom_toBottomOf="@id/layoutShareId"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/layoutShareId" />
 
-            <!-- Divider -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="?android:attr/listDivider"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="16dp"/>
+        <TextView
+            android:id="@+id/labelRequests"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Requests"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutShareId" />
 
-            <!-- Friend Requests Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Friend Requests"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                android:layout_marginBottom="8dp"/>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/requestsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:maxHeight="150dp"
+            app:layout_constraintTop_toBottomOf="@id/labelRequests" />
 
-            <!-- Friend Requests RecyclerView and TextView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/requestsRecyclerView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxHeight="200dp"
-                android:visibility="gone"
-                tools:listitem="@layout/friend_request_item"
-                tools:visibility="visible"
-                tools:itemCount="1"/>
+        <TextView
+            android:id="@+id/tvNoRequests"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="No new requests."
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/labelRequests" />
 
-            <TextView
-                android:id="@+id/tvNoRequests"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="No new requests."
-                android:textColor="?android:attr/textColorSecondary"/>
+        <TextView
+            android:id="@+id/labelFriends"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Your Friends"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/requestsRecyclerView" />
 
-            <!-- Another Divider -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="?android:attr/listDivider"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp"/>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/friendsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:maxHeight="250dp"
+            app:layout_constraintTop_toBottomOf="@id/labelFriends" />
 
-            <!-- Your Friends Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Your Friends"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                android:layout_marginBottom="8dp"/>
+        <TextView
+            android:id="@+id/tvNoFriends"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="No friends yet."
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/labelFriends" />
 
-            <!-- Friends RecyclerView and TextView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/friendsRecyclerView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxHeight="250dp"
-                android:visibility="gone"
-                tools:listitem="@layout/friend_item"
-                tools:visibility="visible"
-                tools:itemCount="3"/>
-
-            <TextView
-                android:id="@+id/tvNoFriends"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="You haven't added any friends yet."
-                android:textColor="?android:attr/textColorSecondary"/>
-
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- 2. ADD THIS CLOSE BUTTON -->
-    <!-- It sits on top of the card in the top-right corner of the screen -->
-    <ImageButton
-        android:id="@+id/buttonClose"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_gravity="top|end"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Close"
-        android:src="@drawable/ic_close"
-        app:tint="?attr/colorOnPrimary"
-        android:backgroundTint="#FFFFFF"/>
-
-</FrameLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

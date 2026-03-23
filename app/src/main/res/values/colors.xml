@@ -2,4 +2,20 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Primary Colors -->
+    <color name="primary">#6750A4</color>
+    <color name="onPrimary">#FFFFFF</color>
+    <color name="primaryContainer">#EADDFF</color>
+    
+    <!-- Surface Colors -->
+    <color name="surface">#FEF7FF</color>
+    <color name="onSurface">#1D1B20</color>
+    <color name="surfaceVariant">#E7E0EC</color>
+    
+    <!-- Dark Mode Primary -->
+    <color name="primaryDark">#D0BCFF</color>
+    <color name="onPrimaryDark">#381E72</color>
+    <color name="surfaceDark">#141218</color>
+    <color name="onSurfaceDark">#E6E1E5</color>
 </resources>

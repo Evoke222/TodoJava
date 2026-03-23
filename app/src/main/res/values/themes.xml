@@ -1,19 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.TodoJava" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/onPrimary</item>
+        <item name="colorPrimaryContainer">@color/primaryContainer</item>
+        <item name="android:windowBackground">@color/surface</item>
+        <item name="android:statusBarColor">@color/surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        
+        <!-- Unified Button Style -->
+        <item name="materialButtonStyle">@style/Widget.TodoJava.Button</item>
     </style>
 
     <style name="Theme.TodoJava" parent="Base.Theme.TodoJava" />
 
-    <!-- ADD THIS NEW STYLE FOR THE DIALOG ACTIVITY -->
+    <!-- Custom Button Style -->
+    <style name="Widget.TodoJava.Button" parent="Widget.Material3.Button">
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.TodoJava.Button</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+    </style>
+
+    <style name="ShapeAppearance.TodoJava.Button" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">12dp</item>
+    </style>
+
     <style name="Theme.TodoJava.DialogActivity" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Make the background translucent -->
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowNoTitle">true</item>
-        <!-- This is important for newer Android versions -->
         <item name="android:windowTranslucentStatus">true</item>
     </style>
 </resources>

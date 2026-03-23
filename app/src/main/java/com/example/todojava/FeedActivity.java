@@ -1,17 +1,27 @@
 package com.example.todojava;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.util.Pair;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -21,50 +31,79 @@ import com.example.todojava.tasks.AddTaskActivity;
 import com.example.todojava.tasks.OnTaskInteractionListener;
 import com.example.todojava.tasks.Task;
 import com.example.todojava.tasks.TaskAdapter;
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class FeedActivity extends AppCompatActivity implements OnTaskInteractionListener {
 
     private static final String TAG = "FeedActivity";
+    private static final String PREFS_NAME = "theme_prefs";
+    private static final String KEY_DARK_MODE = "is_dark_mode";
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private FirebaseUser currentUser;
 
-    // Listeners for real-time updates
     private ListenerRegistration ownedItemsListener;
     private ListenerRegistration sharedItemsListener;
+    private ListenerRegistration userProfileListener;
 
     private ImageView ivProfilePicture;
     private TextView tvUsername;
     private ImageButton buttonAddFriend;
     private ImageButton buttonSharedItems;
+    private ImageButton buttonCalendar;
     private RecyclerView tasksRecyclerView;
     private TaskAdapter taskAdapter;
 
-    // Separate lists for owned and shared items
-    private List<Task> ownedTaskList = new ArrayList<>();
-    private List<Task> sharedTaskList = new ArrayList<>();
+    private final Map<String, Task> ownedTaskMap = new HashMap<>();
+    private final Map<String, Task> sharedTaskMap = new HashMap<>();
 
     private FloatingActionButton fabAddTask;
     private ImageButton buttonSettings;
     private Spinner filterSpinner;
 
+    private BarChart taskBarChart;
+    private Spinner chartTypeSpinner;
+    private Button btnCustomRange;
+    private TextView tvChartRange;
+
+    private long startDateMs = -1;
+    private long endDateMs = -1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        boolean isDarkMode = sharedPreferences.getBoolean(KEY_DARK_MODE, false);
+        if (isDarkMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feed);
 
@@ -79,10 +118,18 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         buttonSettings = findViewById(R.id.buttonSettings);
         buttonAddFriend = findViewById(R.id.buttonAddFriend);
         buttonSharedItems = findViewById(R.id.buttonSharedItems);
+        buttonCalendar = findViewById(R.id.buttonCalendar);
         filterSpinner = findViewById(R.id.filterSpinner);
+        taskBarChart = findViewById(R.id.taskBarChart);
+        chartTypeSpinner = findViewById(R.id.chartTypeSpinner);
+        btnCustomRange = findViewById(R.id.btnCustomRange);
+        tvChartRange = findViewById(R.id.tvChartRange);
 
         setupRecyclerView();
         setupFilterSpinner();
+        setupChart();
+        setupChartControls();
+        checkNotificationPermission();
 
         if (currentUser == null) {
             goToLogin();
@@ -109,25 +156,132 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             startActivity(intent);
         });
 
-        loadUserProfile();
-        loadTasks();
+        buttonCalendar.setOnClickListener(v -> {
+            Intent intent = new Intent(FeedActivity.this, CalendarActivity.class);
+            startActivity(intent);
+        });
+
+        btnCustomRange.setOnClickListener(v -> showDateRangePicker());
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (currentUser != null) {
+            startRealTimeListeners();
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        // Remove listeners to prevent memory leaks
+        stopRealTimeListeners();
+    }
+
+    private void startRealTimeListeners() {
+        // Remove existing if any
+        stopRealTimeListeners();
+
+        // User Profile Listener
+        userProfileListener = db.collection("users").document(currentUser.getUid())
+                .addSnapshotListener((document, e) -> {
+                    if (e != null) return;
+                    if (document != null && document.exists()) {
+                        tvUsername.setText(document.getString("username"));
+                        String pfpUrl = document.getString("pfp_url");
+                        if (pfpUrl != null && !pfpUrl.isEmpty()) {
+                            Glide.with(this).load(pfpUrl).placeholder(R.drawable.ic_default_profile).circleCrop().into(ivProfilePicture);
+                        }
+                    }
+                });
+
+        // Owned Tasks Listener
+        ownedItemsListener = db.collection("items")
+                .whereEqualTo("owner_uid", currentUser.getUid())
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) return;
+                    ownedTaskMap.clear();
+                    if (snapshots != null) {
+                        for (QueryDocumentSnapshot doc : snapshots) {
+                            Task task = doc.toObject(Task.class);
+                            ownedTaskMap.put(doc.getId(), task);
+                        }
+                    }
+                    updateUI();
+                });
+
+        // Shared Tasks Listener
+        sharedItemsListener = db.collection("items")
+                .whereEqualTo("sharedWithUid", currentUser.getUid())
+                .whereEqualTo("shareStatus", "accepted")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) return;
+                    sharedTaskMap.clear();
+                    if (snapshots != null) {
+                        for (QueryDocumentSnapshot doc : snapshots) {
+                            Task task = doc.toObject(Task.class);
+                            sharedTaskMap.put(doc.getId(), task);
+                        }
+                    }
+                    updateUI();
+                });
+    }
+
+    private void stopRealTimeListeners() {
+        if (userProfileListener != null) {
+            userProfileListener.remove();
+            userProfileListener = null;
+        }
         if (ownedItemsListener != null) {
             ownedItemsListener.remove();
+            ownedItemsListener = null;
         }
         if (sharedItemsListener != null) {
             sharedItemsListener.remove();
+            sharedItemsListener = null;
         }
     }
 
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
+    }
+
+    private void setupChartControls() {
+        String[] options = {"All Items", "Tasks Only", "Events Only"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, options);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        chartTypeSpinner.setAdapter(adapter);
+
+        chartTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                updateUI();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void showDateRangePicker() {
+        MaterialDatePicker<Pair<Long, Long>> picker = MaterialDatePicker.Builder.dateRangePicker()
+                .setTitleText("Select Date Range")
+                .build();
+
+        picker.addOnPositiveButtonClickListener(selection -> {
+            startDateMs = selection.first;
+            endDateMs = selection.second;
+            updateUI();
+        });
+
+        picker.show(getSupportFragmentManager(), "RANGE_PICKER");
+    }
+
     private void setupRecyclerView() {
-        // The adapter is initialized with an empty list.
-        // It will be updated by loadTasks().
         taskAdapter = new TaskAdapter(new ArrayList<>(), this);
         tasksRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         tasksRecyclerView.setAdapter(taskAdapter);
@@ -142,128 +296,129 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         filterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // When filter changes, re-run the filtering and update the adapter
-                updateAndFilterTaskList();
+                updateUI();
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 
-    private void loadUserProfile() {
-        db.collection("users").document(currentUser.getUid()).get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot document = task.getResult();
-                        if (document != null && document.exists()) {
-                            tvUsername.setText(document.getString("username"));
-                            String pfpUrl = document.getString("pfp_url");
-                            if (pfpUrl != null && !pfpUrl.isEmpty()) {
-                                Glide.with(this).load(pfpUrl).placeholder(R.drawable.ic_default_profile).error(R.drawable.ic_profile_error).circleCrop().into(ivProfilePicture);
-                            }
-                        } else {
-                            Log.w(TAG, "User document not found for UID: " + currentUser.getUid());
-                        }
-                    } else {
-                        Log.e(TAG, "Failed to fetch user document.", task.getException());
-                    }
-                });
-    }
+    private void setupChart() {
+        taskBarChart.getDescription().setEnabled(false);
+        taskBarChart.setDrawGridBackground(false);
+        taskBarChart.setDrawBarShadow(false);
+        taskBarChart.getLegend().setEnabled(false);
 
-    private void loadTasks() {
-        if (currentUser == null) {
-            Log.w(TAG, "Cannot load tasks, user is not logged in.");
-            return;
-        }
+        XAxis xAxis = taskBarChart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setDrawGridLines(false);
+        xAxis.setGranularity(1f);
 
-        // Clean up previous listeners if they exist
-        if (ownedItemsListener != null) ownedItemsListener.remove();
-        if (sharedItemsListener != null) sharedItemsListener.remove();
-
-        // Query 1: Items owned by the current user
-        Query ownedQuery = db.collection("items")
-                .whereEqualTo("owner_uid", currentUser.getUid());
-
-        ownedItemsListener = ownedQuery.addSnapshotListener((snapshots, e) -> {
-            if (e != null) {
-                Log.w(TAG, "Listen failed for owned items.", e);
-                return;
+        YAxis leftAxis = taskBarChart.getAxisLeft();
+        leftAxis.setDrawGridLines(false);
+        leftAxis.setGranularity(1f);
+        leftAxis.setAxisMinimum(0f);
+        leftAxis.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                return String.valueOf((int) value);
             }
-            ownedTaskList.clear();
-            if (snapshots != null) {
-                for (QueryDocumentSnapshot doc : snapshots) {
-                    Task task = doc.toObject(Task.class);
-                    task.setDocumentId(doc.getId()); // Manually set the document ID
-                    ownedTaskList.add(task);
-                }
-            }
-            Log.d(TAG, "Owned items updated: " + ownedTaskList.size());
-            updateAndFilterTaskList();
         });
 
-        // Query 2: Items shared with the current user that are "accepted"
-        Query sharedQuery = db.collection("items")
-                .whereEqualTo("sharedWithUid", currentUser.getUid())
-                .whereEqualTo("shareStatus", "accepted");
-
-        sharedItemsListener = sharedQuery.addSnapshotListener((snapshots, e) -> {
-            if (e != null) {
-                Log.w(TAG, "Listen failed for shared items.", e);
-                return;
-            }
-            sharedTaskList.clear();
-            if (snapshots != null) {
-                for (QueryDocumentSnapshot doc : snapshots) {
-                    Task task = doc.toObject(Task.class);
-                    task.setDocumentId(doc.getId()); // Manually set the document ID
-                    sharedTaskList.add(task);
-                }
-            }
-            Log.d(TAG, "Shared items updated: " + sharedTaskList.size());
-            updateAndFilterTaskList();
-        });
+        taskBarChart.getAxisRight().setEnabled(false);
     }
 
-    private void updateAndFilterTaskList() {
-        // Use a Map to combine lists and prevent duplicates
-        Map<String, Task> taskMap = new HashMap<>();
-        for (Task task : ownedTaskList) {
-            if (task.getDocumentId() != null) { // Null check to prevent crash
-                taskMap.put(task.getDocumentId(), task);
-            }
-        }
-        for (Task task : sharedTaskList) {
-            if (task.getDocumentId() != null) { // Null check to prevent crash
-                taskMap.put(task.getDocumentId(), task);
-            }
-        }
-        List<Task> combinedList = new ArrayList<>(taskMap.values());
+    private void updateUI() {
+        Map<String, Task> combinedMap = new HashMap<>(ownedTaskMap);
+        combinedMap.putAll(sharedTaskMap);
+        List<Task> allTasks = new ArrayList<>(combinedMap.values());
 
-        // Apply filtering based on the spinner selection
+        updateChartData(allTasks);
+
         String selectedFilter = filterSpinner.getSelectedItem().toString();
         List<Task> filteredList = new ArrayList<>();
 
         if (selectedFilter.equals("All")) {
-            filteredList.addAll(combinedList);
+            filteredList.addAll(allTasks);
         } else {
             String filterType = selectedFilter.equals("Tasks") ? "task" : "event";
-            for (Task task : combinedList) {
-                if (filterType.equals(task.getType())) {
-                    filteredList.add(task);
-                }
+            for (Task task : allTasks) {
+                if (filterType.equals(task.getType())) filteredList.add(task);
             }
         }
 
-        // Sort the final list by creation date
         Collections.sort(filteredList, (t1, t2) -> {
             if (t1.getCreated_at() == null || t2.getCreated_at() == null) return 0;
             return t2.getCreated_at().compareTo(t1.getCreated_at());
         });
 
-        Log.d(TAG, "Updating adapter with " + filteredList.size() + " items.");
         taskAdapter.updateTasks(filteredList);
+    }
+
+    private void updateChartData(List<Task> allTasks) {
+        String filterType = chartTypeSpinner.getSelectedItem().toString();
+        Map<String, Integer> dailyCompletions = new HashMap<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd", Locale.getDefault());
+        
+        List<String> dateLabels = new ArrayList<>();
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+
+        if (startDateMs != -1 && endDateMs != -1) {
+            cal.setTimeInMillis(startDateMs);
+            while (cal.getTimeInMillis() <= endDateMs) {
+                String day = sdf.format(cal.getTime());
+                dateLabels.add(day);
+                dailyCompletions.put(day, 0);
+                cal.add(Calendar.DAY_OF_YEAR, 1);
+            }
+            tvChartRange.setText("Progress from " + sdf.format(new Date(startDateMs)) + " to " + sdf.format(new Date(endDateMs)));
+        } else {
+            for (int i = 6; i >= 0; i--) {
+                cal.setTime(new Date());
+                cal.add(Calendar.DAY_OF_YEAR, -i);
+                String day = sdf.format(cal.getTime());
+                dateLabels.add(day);
+                dailyCompletions.put(day, 0);
+            }
+            tvChartRange.setText("Tasks completed in the last 7 days");
+        }
+
+        for (Task task : allTasks) {
+            if (task.isCompleted() && task.getCreated_at() != null) {
+                if (filterType.equals("Tasks Only") && !task.getType().equals("task")) continue;
+                if (filterType.equals("Events Only") && !task.getType().equals("event")) continue;
+
+                String taskDay = sdf.format(task.getCreated_at());
+                if (dailyCompletions.containsKey(taskDay)) {
+                    dailyCompletions.put(taskDay, dailyCompletions.get(taskDay) + 1);
+                }
+            }
+        }
+
+        List<BarEntry> entries = new ArrayList<>();
+        for (int i = 0; i < dateLabels.size(); i++) {
+            entries.add(new BarEntry(i, dailyCompletions.get(dateLabels.get(i))));
+        }
+
+        BarDataSet dataSet = new BarDataSet(entries, "Completed");
+        dataSet.setColor(getResources().getColor(R.color.primary));
+        dataSet.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                return String.valueOf((int) value);
+            }
+        });
+
+        taskBarChart.setData(new BarData(dataSet));
+        taskBarChart.getXAxis().setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                int index = (int) value;
+                return (index >= 0 && index < dateLabels.size()) ? dateLabels.get(index) : "";
+            }
+        });
+        taskBarChart.invalidate();
     }
 
     private void goToLogin() {
@@ -274,25 +429,13 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
 
     @Override
     public void onTaskChecked(Task task, boolean isChecked) {
-        if (currentUser == null || task.getDocumentId() == null) {
-            Log.w(TAG, "User not logged in or Task ID is null, cannot update task.");
-            return;
-        }
-        db.collection("items").document(task.getDocumentId())
-                .update("completed", isChecked)
-                .addOnSuccessListener(aVoid -> Log.d(TAG, "Task 'completed' field successfully updated!"))
-                .addOnFailureListener(e -> Log.w(TAG, "Error updating task", e));
+        if (currentUser == null || task.getDocumentId() == null) return;
+        db.collection("items").document(task.getDocumentId()).update("completed", isChecked);
     }
 
     @Override
     public void onTaskDeleted(Task task) {
-        if (currentUser == null || task.getDocumentId() == null) {
-            Log.w(TAG, "User not logged in or Task ID is null, cannot delete task.");
-            return;
-        }
-        db.collection("items").document(task.getDocumentId())
-                .delete()
-                .addOnSuccessListener(aVoid -> Log.d(TAG, "Task successfully deleted!"))
-                .addOnFailureListener(e -> Log.w(TAG, "Error deleting task", e));
+        if (currentUser == null || task.getDocumentId() == null) return;
+        db.collection("items").document(task.getDocumentId()).delete();
     }
 }
