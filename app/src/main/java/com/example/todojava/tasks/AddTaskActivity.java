@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RadioButton;
@@ -54,6 +55,7 @@ public class AddTaskActivity extends AppCompatActivity {
     private EditText etTaskTitle;
     private EditText etTaskDueDate;
     private EditText etTaskDetails;
+    private CheckBox cbRemindMe;
     private Button buttonSaveTask;
     private RadioGroup rgTaskType;
     private Spinner spinnerShareWith;
@@ -74,6 +76,7 @@ public class AddTaskActivity extends AppCompatActivity {
         etTaskTitle = findViewById(R.id.etTaskTitle);
         etTaskDueDate = findViewById(R.id.etTaskDueDate);
         etTaskDetails = findViewById(R.id.etTaskDetails);
+        cbRemindMe = findViewById(R.id.cbRemindMe);
         buttonSaveTask = findViewById(R.id.buttonSaveTask);
         ImageButton buttonClose = findViewById(R.id.buttonClose);
         rgTaskType = findViewById(R.id.rgTaskType);
@@ -127,7 +130,7 @@ public class AddTaskActivity extends AppCompatActivity {
                 return;
             }
 
-            List<Task<DocumentSnapshot>> friendTasks = new ArrayList<>();
+            List<com.google.android.gms.tasks.Task<DocumentSnapshot>> friendTasks = new ArrayList<>();
             for (String friendUid : friendUids) friendTasks.add(db.collection("users").document(friendUid).get());
 
             Tasks.whenAllSuccess(friendTasks).addOnSuccessListener(objects -> {
@@ -189,6 +192,7 @@ public class AddTaskActivity extends AppCompatActivity {
         String taskTitle = etTaskTitle.getText().toString().trim();
         String taskDueDate = etTaskDueDate.getText().toString().trim();
         String taskDetails = etTaskDetails.getText().toString().trim();
+        boolean remindMe = cbRemindMe.isChecked();
 
         if (taskTitle.isEmpty()) {
             etTaskTitle.setError("Title cannot be empty");
@@ -210,6 +214,7 @@ public class AddTaskActivity extends AppCompatActivity {
         item.put("owner_uid", currentUser.getUid());
         item.put("created_at", new Date());
         item.put("type", type);
+        item.put("remindMe", remindMe);
 
         if (selectedFriend != null && selectedFriend.getUid() != null && !selectedFriend.getUid().isEmpty()) {
             item.put("sharedWithUid", selectedFriend.getUid());
@@ -219,7 +224,13 @@ public class AddTaskActivity extends AppCompatActivity {
         db.collection("items")
                 .add(item)
                 .addOnSuccessListener(documentReference -> {
-                    scheduleReminder(taskTitle, taskDetails);
+                    if (remindMe) {
+                        scheduleReminder(taskTitle, taskDetails, taskDueDate);
+                        // Confirmation notification when task is created
+                        TaskReminderReceiver.showNotification(this, 
+                                "Task Reminder Set", 
+                                "You will be notified for: " + taskTitle + " at " + taskDueDate);
+                    }
                     Toast.makeText(AddTaskActivity.this, "Item saved!", Toast.LENGTH_SHORT).show();
                     finish();
                 })
@@ -228,7 +239,7 @@ public class AddTaskActivity extends AppCompatActivity {
                 });
     }
 
-    private void scheduleReminder(String title, String details) {
+    private void scheduleReminder(String title, String details, String dueDate) {
         SharedPreferences prefs = getSharedPreferences("theme_prefs", Context.MODE_PRIVATE);
         if (!prefs.getBoolean("notifications_enabled", true)) return;
         if (selectedDueDate == null) return;
@@ -243,6 +254,7 @@ public class AddTaskActivity extends AppCompatActivity {
         Intent intent = new Intent(this, TaskReminderReceiver.class);
         intent.putExtra("task_title", title);
         intent.putExtra("task_details", details);
+        intent.putExtra("task_due_date", dueDate);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, (int)System.currentTimeMillis(), intent, PendingIntent.FLAG_IMMUTABLE);
 

@@ -60,6 +60,18 @@
             app:layout_constraintTop_toBottomOf="@id/taskDueDateTextView"
             tools:text="Here are some more details about the task." />
 
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipRemindMe"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Remind me"
+            android:textSize="12sp"
+            app:chipIcon="@drawable/ic_notifications"
+            app:layout_constraintStart_toStartOf="@id/taskTitleTextView"
+            app:layout_constraintTop_toBottomOf="@id/taskDetailsTextView" />
+
         <LinearLayout
             android:id="@+id/layoutMembers"
             android:layout_width="0dp"
@@ -69,7 +81,7 @@
             android:gravity="center_vertical"
             app:layout_constraintStart_toStartOf="@id/taskTitleTextView"
             app:layout_constraintEnd_toStartOf="@id/taskTypeTextView"
-            app:layout_constraintTop_toBottomOf="@id/taskDetailsTextView">
+            app:layout_constraintTop_toBottomOf="@id/chipRemindMe">
 
             <ImageView
                 android:id="@+id/ivOwner"

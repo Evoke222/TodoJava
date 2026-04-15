@@ -14,6 +14,7 @@ public class Task {
     private String dueDate;
     private boolean completed;
     private String owner_uid;
+    private boolean remindMe;
 
     @ServerTimestamp
     private Date created_at;
@@ -74,6 +75,14 @@ public class Task {
 
     public void setOwner_uid(String owner_uid) {
         this.owner_uid = owner_uid;
+    }
+
+    public boolean isRemindMe() {
+        return remindMe;
+    }
+
+    public void setRemindMe(boolean remindMe) {
+        this.remindMe = remindMe;
     }
 
     public Date getCreated_at() {

@@ -92,6 +92,15 @@
                 android:clickable="true" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cbRemindMe"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Remind me"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutTaskDueDate" />
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/layoutTaskDetails"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -99,7 +108,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:hint="Add more details"
-            app:layout_constraintTop_toBottomOf="@id/layoutTaskDueDate">
+            app:layout_constraintTop_toBottomOf="@id/cbRemindMe">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etTaskDetails"

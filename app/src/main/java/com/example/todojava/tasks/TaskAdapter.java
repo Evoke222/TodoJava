@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.todojava.R;
+import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -64,6 +65,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         TextView tvTaskType;
         CheckBox cbTaskCompleted;
         ImageButton deleteButton;
+        Chip chipRemindMe;
         
         ImageView ivOwner;
         ImageView ivSharedWith;
@@ -77,6 +79,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvTaskType = itemView.findViewById(R.id.taskTypeTextView);
             cbTaskCompleted = itemView.findViewById(R.id.taskCheckBox);
             deleteButton = itemView.findViewById(R.id.button_delete_task);
+            chipRemindMe = itemView.findViewById(R.id.chipRemindMe);
             
             ivOwner = itemView.findViewById(R.id.ivOwner);
             ivSharedWith = itemView.findViewById(R.id.ivSharedWith);
@@ -88,6 +91,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvTaskDueDate.setText(task.getDueDate());
             tvTaskDetails.setText(task.getDetails());
             cbTaskCompleted.setChecked(task.isCompleted());
+
+            // Bind remindMe status
+            if (task.isRemindMe()) {
+                chipRemindMe.setVisibility(View.VISIBLE);
+            } else {
+                chipRemindMe.setVisibility(View.GONE);
+            }
 
             // Reset visibility
             ivSharedWith.setVisibility(View.GONE);

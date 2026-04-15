@@ -20,7 +20,14 @@ public class TaskReminderReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         String taskTitle = intent.getStringExtra("task_title");
         String taskDetails = intent.getStringExtra("task_details");
+        String taskDueDate = intent.getStringExtra("task_due_date");
 
+        showNotification(context, 
+            "Upcoming Task: " + taskTitle, 
+            "Due by: " + taskDueDate + " - " + taskDetails);
+    }
+
+    public static void showNotification(Context context, String title, String message) {
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -33,8 +40,8 @@ public class TaskReminderReceiver extends BroadcastReceiver {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Upcoming Task: " + taskTitle)
-                .setContentText("Starts in 5 minutes: " + taskDetails)
+                .setContentTitle(title)
+                .setContentText(message)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent);
