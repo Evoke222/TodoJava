@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Modern Productivity Palette -->
+    <color name="primary">#2563EB</color> <!-- Strong Modern Blue -->
+    <color name="onPrimary">#FFFFFF</color>
+    <color name="primaryContainer">#DBEAFE</color>
+    
+    <!-- Surface & Background -->
+    <color name="surface">#F8FAFC</color> <!-- Off-white Slate -->
+    <color name="onSurface">#0F172A</color> <!-- Deep Slate Text -->
+    <color name="surfaceVariant">#F1F5F9</color>
+    
+    <!-- Accent Colors -->
+    <color name="accent">#10B981</color> <!-- Emerald Green -->
+    <color name="error">#EF4444</color>
+    
+    <!-- Dark Mode Palette -->
+    <color name="primaryDark">#60A5FA</color>
+    <color name="onPrimaryDark">#1E3A8A</color>
+    <color name="surfaceDark">#0F172A</color>
+    <color name="onSurfaceDark">#F8FAFC</color>
+</resources>

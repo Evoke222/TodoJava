@@ -1,13 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base application theme for Dark Mode -->
     <style name="Base.Theme.TodoJava" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primaryDark</item>
         <item name="colorOnPrimary">@color/onPrimaryDark</item>
-        <item name="colorPrimaryContainer">@color/primaryDark</item>
+        <item name="colorPrimaryContainer">@color/primaryContainerDark</item>
+        <item name="colorOnPrimaryContainer">@color/onPrimaryDark</item>
+        
+        <item name="colorSecondary">@color/secondaryDark</item>
+        <item name="colorOnSecondary">@color/onSecondaryDark</item>
+        <item name="colorSecondaryContainer">@color/secondaryContainerDark</item>
+        <item name="colorOnSecondaryContainer">@color/onSecondaryDark</item>
+        
+        <item name="colorTertiary">@color/tertiary</item>
+        <item name="colorOnTertiary">@color/onTertiary</item>
+
         <item name="android:windowBackground">@color/surfaceDark</item>
         <item name="android:statusBarColor">@color/surfaceDark</item>
         <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Force UI components to our Blue -->
+        <item name="colorPrimaryVariant">@color/primaryDark</item>
+        <item name="materialButtonStyle">@style/Widget.TodoJava.Button</item>
     </style>
 
     <style name="Theme.TodoJava" parent="Base.Theme.TodoJava" />

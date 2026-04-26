@@ -15,17 +15,19 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class SupabaseStorageHelper {
+    // URL for project: hfpinsydceicfxmxgmcu
     private static final String supabaseUrl = "https://hfpinsydceicfxmxgmcu.supabase.co";
 
-    private static final String supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhmcGluc3lkY2VpY2Z4bXhnbWN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3MjE5MTksImV4cCI6MjA4NDI5NzkxOX0.XVEuNZ__MX1Y8sZKXfOnSQoVV3Eg3gxGv7OHdkx5Sa0";
+    // Your new publishable key
+    private static final String supabaseKey = "sb_publishable_dRNtl3vYdvC9Saq8489pIA_o09QcsJG";
 
+    // Ensure this bucket exists and is set to PUBLIC in your Supabase dashboard
     private static final String SUPABASE_BUCKET = "todo-bucket";
 
     private static final String TAG = "SupabaseStorageHelper";
 
     public static void uploadPicture(final File file, final String filePath, OnResultCallback callback) {
         try {
-
             Log.i(TAG, "uploadPicture: Uploading file to Supabase: " + filePath);
 
             OkHttpClient client = new OkHttpClient.Builder().build();
@@ -52,22 +54,22 @@ public class SupabaseStorageHelper {
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                     if (response.isSuccessful()) {
                         String publicUrl =  getFileSupabaseUrl(filePath);
-                        Log.i(TAG, "uploadPicture: Profile picture uploaded successfully to Supabase. Public URL: " + publicUrl);
+                        Log.i(TAG, "uploadPicture: Success. Public URL: " + publicUrl);
                         callback.onResult(true, publicUrl, null);
                     } else {
-                        Log.e(TAG, "uploadPicture: Supabase upload failed: " + response.message());
-                        callback.onResult(false, null, response.message());
+                        Log.e(TAG, "uploadPicture: Failed. Code: " + response.code() + " Message: " + response.message());
+                        callback.onResult(false, null, "Status " + response.code() + ": " + response.message());
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ResponseBody> call, Throwable t) {
-                    Log.e(TAG, "Supabase upload failed", t);
+                    Log.e(TAG, "Supabase connection error", t);
                     callback.onResult(false, null, t.getMessage());
                 }
             });
         } catch (Exception e) {
-            Log.e(TAG, "Exception during Supabase upload", e);
+            Log.e(TAG, "Exception during upload", e);
             callback.onResult(false, null, e.getMessage());
         }
     }

@@ -14,11 +14,10 @@ import java.util.List;
 
 public class GeminiService {
     private static final String TAG = "GeminiService";
-    private static final String API_KEY = "AIzaSyCNCC8cxZmK7y7wA47Vn4JmWdly1avfMvc";
+    private static final String API_KEY = "AIzaSyAyxqd7DagTkNS2fD_hCwGD-x0X_lzd1KQ";
     private final GenerativeModelFutures model;
 
     public GeminiService() {
-        // Removed setResponseMimeType as it is not supported in version 0.9.0
         GenerationConfig config = new GenerationConfig.Builder()
                 .build();
 

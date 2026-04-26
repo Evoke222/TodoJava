@@ -3,19 +3,39 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     
-    <!-- Primary Colors -->
-    <color name="primary">#6750A4</color>
+    <!-- Modern Productivity Palette -->
+    <color name="primary">#2563EB</color> <!-- Strong Blue -->
     <color name="onPrimary">#FFFFFF</color>
-    <color name="primaryContainer">#EADDFF</color>
+    <color name="primaryContainer">#DBEAFE</color>
+    <color name="onPrimaryContainer">#1E40AF</color>
+
+    <color name="secondary">#0F172A</color> <!-- Slate Blue -->
+    <color name="onSecondary">#FFFFFF</color>
+    <color name="secondaryContainer">#E2E8F0</color>
+    <color name="onSecondaryContainer">#334155</color>
+
+    <color name="tertiary">#10B981</color> <!-- Emerald (for accents) -->
+    <color name="onTertiary">#FFFFFF</color>
+    <color name="tertiaryContainer">#D1FAE5</color>
+    <color name="onTertiaryContainer">#065F46</color>
     
-    <!-- Surface Colors -->
-    <color name="surface">#FEF7FF</color>
-    <color name="onSurface">#1D1B20</color>
-    <color name="surfaceVariant">#E7E0EC</color>
+    <!-- Surface & Background -->
+    <color name="surface">#F8FAFC</color>
+    <color name="onSurface">#0F172A</color>
+    <color name="surfaceVariant">#F1F5F9</color>
+    <color name="onSurfaceVariant">#475569</color>
+    <color name="outline">#CBD5E1</color>
     
-    <!-- Dark Mode Primary -->
-    <color name="primaryDark">#D0BCFF</color>
-    <color name="onPrimaryDark">#381E72</color>
-    <color name="surfaceDark">#141218</color>
-    <color name="onSurfaceDark">#E6E1E5</color>
+    <!-- Dark Mode Palette -->
+    <color name="primaryDark">#60A5FA</color>
+    <color name="onPrimaryDark">#1E3A8A</color>
+    <color name="primaryContainerDark">#1E40AF</color>
+    
+    <color name="secondaryDark">#94A3B8</color>
+    <color name="onSecondaryDark">#1E293B</color>
+    <color name="secondaryContainerDark">#334155</color>
+    
+    <color name="surfaceDark">#0F172A</color>
+    <color name="onSurfaceDark">#F8FAFC</color>
+    <color name="onSurfaceVariantDark">#94A3B8</color>
 </resources>

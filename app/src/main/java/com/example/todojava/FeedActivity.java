@@ -38,6 +38,7 @@ import com.example.todojava.tasks.AddTaskActivity;
 import com.example.todojava.tasks.OnTaskInteractionListener;
 import com.example.todojava.tasks.Task;
 import com.example.todojava.tasks.TaskAdapter;
+import com.example.todojava.utils.SupabaseStorageHelper;
 import com.example.todojava.utils.UserImageSelector;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -59,8 +60,6 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -349,22 +348,34 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     }
 
     private void uploadNewProfilePicture(File file) {
-        // Correct Fix: Use the default instance to ensure it picks up the bucket from google-services.json
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReference()
-                .child("profile_pictures/" + currentUser.getUid() + ".jpg");
-
-        storageRef.putFile(Uri.fromFile(file)).addOnSuccessListener(taskSnapshot -> {
-            storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                db.collection("users").document(currentUser.getUid())
-                        .update("pfp_url", uri.toString())
-                        .addOnSuccessListener(aVoid -> {
-                            Toast.makeText(this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
-                        });
-            });
-        }).addOnFailureListener(e -> {
-            Log.e(TAG, "Upload failed", e);
-            Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        if (currentUser == null) return;
+        
+        String filename = "pfp_" + currentUser.getUid() + ".jpg";
+        Log.i(TAG, "Uploading profile picture to Supabase: " + filename);
+        
+        SupabaseStorageHelper.uploadPicture(file, filename, new SupabaseStorageHelper.OnResultCallback() {
+            @Override
+            public void onResult(boolean success, String url, String error) {
+                if (success) {
+                    runOnUiThread(() -> {
+                        db.collection("users").document(currentUser.getUid())
+                                .update("pfp_url", url)
+                                .addOnSuccessListener(aVoid -> {
+                                    Toast.makeText(FeedActivity.this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
+                                    Log.i(TAG, "Firestore updated with Supabase URL: " + url);
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "Firestore update failed", e);
+                                    Toast.makeText(FeedActivity.this, "Failed to update profile", Toast.LENGTH_SHORT).show();
+                                });
+                    });
+                } else {
+                    runOnUiThread(() -> {
+                        Log.e(TAG, "Supabase upload failed: " + error);
+                        Toast.makeText(FeedActivity.this, "Upload failed: " + error, Toast.LENGTH_SHORT).show();
+                    });
+                }
+            }
         });
     }
 
@@ -391,7 +402,7 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
                     if (document != null && document.exists()) {
                         tvUsername.setText(document.getString("username"));
                         String pfpUrl = document.getString("pfp_url");
-                        if (pfpUrl != null && !pfpUrl.isEmpty()) {
+                        if (pfpUrl != null && !pfpUrl.trim().isEmpty()) {
                             Glide.with(this).load(pfpUrl).placeholder(R.drawable.ic_default_profile).circleCrop().into(ivProfilePicture);
                         }
                     }
@@ -530,7 +541,6 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         String selectedFilter = filterSpinner.getSelectedItem().toString();
         List<Task> filteredList = new ArrayList<>();
 
-        // Apply Type Filter (Task/Event)
         if (selectedFilter.equals("All")) {
             filteredList.addAll(allTasks);
         } else {
@@ -540,21 +550,17 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             }
         }
 
-        // Apply Day Filter (Today/Tomorrow/Upcoming)
         int checkedChipId = dayChipGroup.getCheckedChipId();
         if (checkedChipId != R.id.chipAll) {
             List<Task> dayFilteredList = new ArrayList<>();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            
             Calendar cal = Calendar.getInstance();
             String todayStr = sdf.format(cal.getTime());
-            
             cal.add(Calendar.DAY_OF_YEAR, 1);
             String tomorrowStr = sdf.format(cal.getTime());
 
             for (Task task : filteredList) {
                 if (task.getDueDate() == null) continue;
-                
                 if (checkedChipId == R.id.chipToday && task.getDueDate().equals(todayStr)) {
                     dayFilteredList.add(task);
                 } else if (checkedChipId == R.id.chipTomorrow && task.getDueDate().equals(tomorrowStr)) {
@@ -580,7 +586,6 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         String filterType = chartTypeSpinner.getSelectedItem().toString();
         Map<String, Integer> dailyCompletions = new HashMap<>();
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd", Locale.getDefault());
-        
         List<String> dateLabels = new ArrayList<>();
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 
@@ -608,7 +613,6 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             if (task.isCompleted() && task.getCreated_at() != null) {
                 if (filterType.equals("Tasks Only") && !task.getType().equals("task")) continue;
                 if (filterType.equals("Events Only") && !task.getType().equals("event")) continue;
-
                 String taskDay = sdf.format(task.getCreated_at());
                 if (dailyCompletions.containsKey(taskDay)) {
                     dailyCompletions.put(taskDay, dailyCompletions.get(taskDay) + 1);
@@ -625,9 +629,7 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         dataSet.setColor(getResources().getColor(R.color.primary));
         dataSet.setValueFormatter(new ValueFormatter() {
             @Override
-            public String getFormattedValue(float value) {
-                return String.valueOf((int) value);
-            }
+            public String getFormattedValue(float value) { return String.valueOf((int) value); }
         });
 
         taskBarChart.setData(new BarData(dataSet));

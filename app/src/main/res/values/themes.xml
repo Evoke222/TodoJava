@@ -5,11 +5,24 @@
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/onPrimary</item>
         <item name="colorPrimaryContainer">@color/primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/onPrimaryContainer</item>
+        
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorOnSecondary">@color/onSecondary</item>
+        <item name="colorSecondaryContainer">@color/secondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/onSecondaryContainer</item>
+        
+        <item name="colorTertiary">@color/tertiary</item>
+        <item name="colorOnTertiary">@color/onTertiary</item>
+        <item name="colorTertiaryContainer">@color/tertiaryContainer</item>
+        <item name="colorOnTertiaryContainer">@color/onTertiaryContainer</item>
+
         <item name="android:windowBackground">@color/surface</item>
         <item name="android:statusBarColor">@color/surface</item>
         <item name="android:windowLightStatusBar">true</item>
         
-        <!-- Unified Button Style -->
+        <!-- Force UI components to our Blue -->
+        <item name="colorPrimaryVariant">@color/primary</item>
         <item name="materialButtonStyle">@style/Widget.TodoJava.Button</item>
     </style>
 
@@ -20,8 +33,9 @@
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.TodoJava.Button</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="backgroundTint">@color/primary</item>
     </style>
 
     <style name="ShapeAppearance.TodoJava.Button" parent="ShapeAppearance.Material3.SmallComponent">
