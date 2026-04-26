@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bottom_sheet_background"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:background="?attr/colorOutlineVariant" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="AI Task Assistant"
+        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+        android:textColor="?attr/colorPrimary" />
+
+    <ScrollView
+        android:id="@+id/aiResponseScroll"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginTop="16dp"
+        android:background="?attr/colorSurfaceVariant"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvAiResponse"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ask me to create, update, or delete tasks for you."
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+    </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnApplyChanges"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Apply Proposed Changes"
+        android:visibility="gone"
+        app:icon="@drawable/ic_check" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/inputLayoutAi"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Type your instructions...">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etAiInstruction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionSend"
+            android:inputType="textCapSentences" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+        android:id="@+id/btnAskAi"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Send Instruction" />
+
+</LinearLayout>

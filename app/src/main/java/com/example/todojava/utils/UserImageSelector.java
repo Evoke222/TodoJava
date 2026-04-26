@@ -38,6 +38,11 @@ public class UserImageSelector {
         this.imageBitmap = null;
         initResultLaunchers();
     }
+
+    public void setImageView(ImageView imageView) {
+        this.imageView = imageView;
+    }
+
     public void showImageSourceDialog() {
         String[] options = {"Take Photo", "Choose from Gallery"};
         new AlertDialog.Builder(activity)
@@ -86,7 +91,9 @@ public class UserImageSelector {
                     if (uri != null) {
                         Log.d(TAG, "PhotoPicker: Selected URI: " + uri);
                         this.imageUri = uri;
-                        imageView.setImageURI(uri);
+                        if (imageView != null) {
+                            imageView.setImageURI(uri);
+                        }
                     } else {
                         Log.d(TAG, "PhotoPicker: No media selected");
                     }
@@ -103,7 +110,9 @@ public class UserImageSelector {
                         Bitmap bitmap = (Bitmap) data.getExtras().get("data");
                         if (bitmap != null) {
                             Log.d(TAG, "setting bitmap");
-                            imageView.setImageBitmap(bitmap);
+                            if (imageView != null) {
+                                imageView.setImageBitmap(bitmap);
+                            }
                             this.imageBitmap = bitmap;
                         } else {
                             Log.e(TAG, "Error retrieving image from camera intent");

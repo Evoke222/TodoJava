@@ -1,21 +1,26 @@
 package com.example.todojava;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -27,10 +32,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.todojava.Friends.FriendsActivity;
+import com.example.todojava.ai.AiAction;
+import com.example.todojava.ai.GeminiService;
 import com.example.todojava.tasks.AddTaskActivity;
 import com.example.todojava.tasks.OnTaskInteractionListener;
 import com.example.todojava.tasks.Task;
 import com.example.todojava.tasks.TaskAdapter;
+import com.example.todojava.utils.UserImageSelector;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
@@ -38,14 +46,26 @@ import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -82,7 +102,8 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     private final Map<String, Task> ownedTaskMap = new HashMap<>();
     private final Map<String, Task> sharedTaskMap = new HashMap<>();
 
-    private FloatingActionButton fabAddTask;
+    private ExtendedFloatingActionButton fabAddTask;
+    private FloatingActionButton fabAiAssistant;
     private ImageButton buttonSettings;
     private Spinner filterSpinner;
 
@@ -91,8 +112,15 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     private Button btnCustomRange;
     private TextView tvChartRange;
 
+    private ChipGroup dayChipGroup;
+
     private long startDateMs = -1;
     private long endDateMs = -1;
+
+    private UserImageSelector userImageSelector;
+    private GeminiService geminiService;
+
+    private List<AiAction> pendingAiActions = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,11 +138,13 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         currentUser = mAuth.getCurrentUser();
+        geminiService = new GeminiService();
 
         ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvUsername = findViewById(R.id.tvUsername);
         tasksRecyclerView = findViewById(R.id.tasksRecyclerView);
         fabAddTask = findViewById(R.id.fabAddTask);
+        fabAiAssistant = findViewById(R.id.fabAiAssistant);
         buttonSettings = findViewById(R.id.buttonSettings);
         buttonAddFriend = findViewById(R.id.buttonAddFriend);
         buttonSharedItems = findViewById(R.id.buttonSharedItems);
@@ -124,22 +154,30 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         chartTypeSpinner = findViewById(R.id.chartTypeSpinner);
         btnCustomRange = findViewById(R.id.btnCustomRange);
         tvChartRange = findViewById(R.id.tvChartRange);
+        dayChipGroup = findViewById(R.id.dayChipGroup);
+
+        userImageSelector = new UserImageSelector(this, null);
 
         setupRecyclerView();
         setupFilterSpinner();
         setupChart();
         setupChartControls();
         checkNotificationPermission();
+        setupDaySelector();
 
         if (currentUser == null) {
             goToLogin();
             return;
         }
 
+        ivProfilePicture.setOnClickListener(v -> showProfileDialog());
+
         fabAddTask.setOnClickListener(view -> {
             Intent intent = new Intent(FeedActivity.this, AddTaskActivity.class);
             startActivity(intent);
         });
+
+        fabAiAssistant.setOnClickListener(view -> showAiAssistantDialog());
 
         buttonSettings.setOnClickListener(v -> {
             Intent intent = new Intent(FeedActivity.this, SettingsActivity.class);
@@ -164,6 +202,172 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         btnCustomRange.setOnClickListener(v -> showDateRangePicker());
     }
 
+    private void setupDaySelector() {
+        dayChipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> updateUI());
+    }
+
+    private void showAiAssistantDialog() {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
+        View sheetView = LayoutInflater.from(this).inflate(R.layout.layout_ai_chat, null);
+        bottomSheetDialog.setContentView(sheetView);
+
+        TextView tvAiResponse = sheetView.findViewById(R.id.tvAiResponse);
+        EditText etAiInstruction = sheetView.findViewById(R.id.etAiInstruction);
+        Button btnAskAi = sheetView.findViewById(R.id.btnAskAi);
+        Button btnApplyChanges = sheetView.findViewById(R.id.btnApplyChanges);
+
+        pendingAiActions.clear();
+
+        btnAskAi.setOnClickListener(v -> {
+            String instruction = etAiInstruction.getText().toString().trim();
+            if (instruction.isEmpty()) return;
+
+            tvAiResponse.setText("Thinking...");
+            etAiInstruction.setText("");
+            btnApplyChanges.setVisibility(View.GONE);
+
+            Map<String, Task> combinedMap = new HashMap<>(ownedTaskMap);
+            combinedMap.putAll(sharedTaskMap);
+            List<Task> allTasks = new ArrayList<>(combinedMap.values());
+
+            ListenableFuture<com.google.ai.client.generativeai.type.GenerateContentResponse> future = 
+                geminiService.getPlan(allTasks, instruction);
+
+            Futures.addCallback(future, new FutureCallback<com.google.ai.client.generativeai.type.GenerateContentResponse>() {
+                @Override
+                public void onSuccess(com.google.ai.client.generativeai.type.GenerateContentResponse result) {
+                    runOnUiThread(() -> parseAiResponse(result.getText(), tvAiResponse, btnApplyChanges));
+                }
+
+                @Override
+                public void onFailure(Throwable t) {
+                    runOnUiThread(() -> tvAiResponse.setText("Error: " + t.getMessage()));
+                }
+            }, ContextCompat.getMainExecutor(this));
+        });
+
+        btnApplyChanges.setOnClickListener(v -> {
+            applyAiActions();
+            bottomSheetDialog.dismiss();
+            Toast.makeText(this, "AI Changes Applied!", Toast.LENGTH_SHORT).show();
+        });
+
+        bottomSheetDialog.show();
+    }
+
+    private void parseAiResponse(String json, TextView tvResponse, Button btnApply) {
+        try {
+            Gson gson = new Gson();
+            JsonObject obj = gson.fromJson(json, JsonObject.class);
+            
+            String message = obj.get("message").getAsString();
+            tvResponse.setText(message);
+
+            JsonArray actions = obj.getAsJsonArray("actions");
+            if (actions != null && actions.size() > 0) {
+                pendingAiActions.clear();
+                for (int i = 0; i < actions.size(); i++) {
+                    JsonObject actionObj = actions.get(i).getAsJsonObject();
+                    String typeStr = actionObj.get("type").getAsString();
+                    AiAction.Type type = AiAction.Type.valueOf(typeStr);
+                    
+                    Task task = null;
+                    if (actionObj.has("task")) {
+                        task = gson.fromJson(actionObj.get("task"), Task.class);
+                    }
+                    
+                    String id = actionObj.has("id") ? actionObj.get("id").getAsString() : null;
+                    pendingAiActions.add(new AiAction(type, task, id));
+                }
+                btnApply.setVisibility(View.VISIBLE);
+                btnApply.setText("Apply " + pendingAiActions.size() + " Changes");
+            }
+        } catch (Exception e) {
+            tvResponse.setText("AI: " + json);
+            Log.e(TAG, "Parsing error", e);
+        }
+    }
+
+    private void applyAiActions() {
+        for (AiAction action : pendingAiActions) {
+            switch (action.getType()) {
+                case CREATE:
+                    action.getTask().setOwner_uid(currentUser.getUid());
+                    db.collection("items").add(action.getTask());
+                    break;
+                case UPDATE:
+                    if (action.getOriginalTaskId() != null) {
+                        db.collection("items").document(action.getOriginalTaskId()).set(action.getTask());
+                    }
+                    break;
+                case DELETE:
+                    if (action.getOriginalTaskId() != null) {
+                        db.collection("items").document(action.getOriginalTaskId()).delete();
+                    }
+                    break;
+            }
+        }
+    }
+
+    private void showProfileDialog() {
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_profile_card, null);
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.CustomDialogTheme)
+                .setView(dialogView)
+                .create();
+
+        ImageView dialogIvProfile = dialogView.findViewById(R.id.dialogIvProfile);
+        ImageButton btnEditPfp = dialogView.findViewById(R.id.btnEditPfp);
+        TextView dialogTvUsername = dialogView.findViewById(R.id.dialogTvUsername);
+        TextView dialogTvEmail = dialogView.findViewById(R.id.dialogTvEmail);
+        TextView tvMemberSince = dialogView.findViewById(R.id.tvMemberSince);
+        Button btnCloseDialog = dialogView.findViewById(R.id.btnCloseDialog);
+
+        dialogTvUsername.setText(tvUsername.getText());
+        dialogTvEmail.setText(currentUser.getEmail());
+
+        long creationTimestamp = currentUser.getMetadata().getCreationTimestamp();
+        SimpleDateFormat sdf = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+        tvMemberSince.setText("Member since: " + sdf.format(new Date(creationTimestamp)));
+
+        if (ivProfilePicture.getDrawable() != null) {
+            dialogIvProfile.setImageDrawable(ivProfilePicture.getDrawable());
+        }
+
+        userImageSelector.setImageView(dialogIvProfile);
+
+        btnEditPfp.setOnClickListener(v -> userImageSelector.showImageSourceDialog());
+
+        btnCloseDialog.setOnClickListener(v -> {
+            File newImage = userImageSelector.createImageFile();
+            if (newImage != null) {
+                uploadNewProfilePicture(newImage);
+            }
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void uploadNewProfilePicture(File file) {
+        // Correct Fix: Use the default instance to ensure it picks up the bucket from google-services.json
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageRef = storage.getReference()
+                .child("profile_pictures/" + currentUser.getUid() + ".jpg");
+
+        storageRef.putFile(Uri.fromFile(file)).addOnSuccessListener(taskSnapshot -> {
+            storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                db.collection("users").document(currentUser.getUid())
+                        .update("pfp_url", uri.toString())
+                        .addOnSuccessListener(aVoid -> {
+                            Toast.makeText(this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
+                        });
+            });
+        }).addOnFailureListener(e -> {
+            Log.e(TAG, "Upload failed", e);
+            Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -179,10 +383,8 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     }
 
     private void startRealTimeListeners() {
-        // Remove existing if any
         stopRealTimeListeners();
 
-        // User Profile Listener
         userProfileListener = db.collection("users").document(currentUser.getUid())
                 .addSnapshotListener((document, e) -> {
                     if (e != null) return;
@@ -195,7 +397,6 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
                     }
                 });
 
-        // Owned Tasks Listener
         ownedItemsListener = db.collection("items")
                 .whereEqualTo("owner_uid", currentUser.getUid())
                 .addSnapshotListener((snapshots, e) -> {
@@ -210,7 +411,6 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
                     updateUI();
                 });
 
-        // Shared Tasks Listener
         sharedItemsListener = db.collection("items")
                 .whereEqualTo("sharedWithUid", currentUser.getUid())
                 .whereEqualTo("shareStatus", "accepted")
@@ -228,18 +428,9 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
     }
 
     private void stopRealTimeListeners() {
-        if (userProfileListener != null) {
-            userProfileListener.remove();
-            userProfileListener = null;
-        }
-        if (ownedItemsListener != null) {
-            ownedItemsListener.remove();
-            ownedItemsListener = null;
-        }
-        if (sharedItemsListener != null) {
-            sharedItemsListener.remove();
-            sharedItemsListener = null;
-        }
+        if (userProfileListener != null) { userProfileListener.remove(); userProfileListener = null; }
+        if (ownedItemsListener != null) { ownedItemsListener.remove(); ownedItemsListener = null; }
+        if (sharedItemsListener != null) { sharedItemsListener.remove(); sharedItemsListener = null; }
     }
 
     private void checkNotificationPermission() {
@@ -339,6 +530,7 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
         String selectedFilter = filterSpinner.getSelectedItem().toString();
         List<Task> filteredList = new ArrayList<>();
 
+        // Apply Type Filter (Task/Event)
         if (selectedFilter.equals("All")) {
             filteredList.addAll(allTasks);
         } else {
@@ -346,6 +538,34 @@ public class FeedActivity extends AppCompatActivity implements OnTaskInteraction
             for (Task task : allTasks) {
                 if (filterType.equals(task.getType())) filteredList.add(task);
             }
+        }
+
+        // Apply Day Filter (Today/Tomorrow/Upcoming)
+        int checkedChipId = dayChipGroup.getCheckedChipId();
+        if (checkedChipId != R.id.chipAll) {
+            List<Task> dayFilteredList = new ArrayList<>();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            
+            Calendar cal = Calendar.getInstance();
+            String todayStr = sdf.format(cal.getTime());
+            
+            cal.add(Calendar.DAY_OF_YEAR, 1);
+            String tomorrowStr = sdf.format(cal.getTime());
+
+            for (Task task : filteredList) {
+                if (task.getDueDate() == null) continue;
+                
+                if (checkedChipId == R.id.chipToday && task.getDueDate().equals(todayStr)) {
+                    dayFilteredList.add(task);
+                } else if (checkedChipId == R.id.chipTomorrow && task.getDueDate().equals(tomorrowStr)) {
+                    dayFilteredList.add(task);
+                } else if (checkedChipId == R.id.chipUpcoming) {
+                    if (!task.getDueDate().equals(todayStr) && !task.getDueDate().equals(tomorrowStr)) {
+                        dayFilteredList.add(task);
+                    }
+                }
+            }
+            filteredList = dayFilteredList;
         }
 
         Collections.sort(filteredList, (t1, t2) -> {

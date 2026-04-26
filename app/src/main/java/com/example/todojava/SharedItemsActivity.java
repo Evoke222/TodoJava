@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,7 +37,7 @@ public class SharedItemsActivity extends AppCompatActivity implements SharedItem
     private List<Task> sharedItemsList = new ArrayList<>();
     private Map<String, String> ownerNames = new HashMap<>();
 
-    private TextView tvNoSharedItems;
+    private LinearLayout tvNoSharedItems;
     private ImageButton buttonClose;
 
     @Override

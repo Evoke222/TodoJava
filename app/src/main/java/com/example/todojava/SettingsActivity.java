@@ -8,10 +8,12 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
+import com.example.todojava.utils.AlarmScheduler;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -85,6 +87,14 @@ public class SettingsActivity extends AppCompatActivity {
             SharedPreferences.Editor editor = sharedPreferences.edit();
             editor.putBoolean(KEY_NOTIFICATIONS, isChecked);
             editor.apply();
+
+            if (isChecked) {
+                AlarmScheduler.scheduleDailyMorningReminder(this);
+                Toast.makeText(this, "Notifications Enabled: Reminders set!", Toast.LENGTH_SHORT).show();
+            } else {
+                AlarmScheduler.cancelDailyMorningReminder(this);
+                Toast.makeText(this, "Notifications Disabled", Toast.LENGTH_SHORT).show();
+            }
         });
 
         loadUserShareId();

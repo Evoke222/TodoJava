@@ -34,4 +34,9 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowTranslucentStatus">true</item>
     </style>
+
+    <style name="CustomDialogTheme" parent="Theme.Material3.DayNight.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>
