@@ -6,8 +6,11 @@
     android:layout_height="wrap_content"
     android:layout_gravity="center"
     android:layout_margin="24dp"
+    app:cardBackgroundColor="@color/white"
     app:cardCornerRadius="16dp"
     app:cardElevation="8dp"
+    app:strokeWidth="1.5dp"
+    app:strokeColor="@color/primary"
     tools:context=".Friends.FriendsActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -23,13 +26,16 @@
             android:contentDescription="Close"
             android:src="@drawable/ic_close"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/primary" />
 
         <TextView
             android:id="@+id/tvFriendsTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Friends"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
             android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -42,6 +48,8 @@
             android:layout_marginTop="24dp"
             android:layout_marginEnd="8dp"
             android:hint="Enter Share ID"
+            app:boxStrokeColor="@color/primary"
+            app:hintTextColor="@color/primary"
             app:layout_constraintEnd_toStartOf="@id/buttonAddFriend"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvFriendsTitle">
@@ -50,6 +58,7 @@
                 android:id="@+id/editTextShareId"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:textColor="@color/primary"
                 android:inputType="textCapCharacters"
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -59,6 +68,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Add"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/primary"
             app:layout_constraintBottom_toBottomOf="@id/layoutShareId"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/layoutShareId" />
@@ -69,6 +80,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:text="Requests"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/layoutShareId" />
@@ -87,6 +100,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="No new requests."
+            android:textColor="@color/primary"
+            android:alpha="0.7"
             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/labelRequests" />
@@ -97,6 +112,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:text="Your Friends"
+            android:textColor="@color/primary"
+            android:textStyle="bold"
             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/requestsRecyclerView" />
@@ -115,6 +132,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="No friends yet."
+            android:textColor="@color/primary"
+            android:alpha="0.7"
             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/labelFriends" />

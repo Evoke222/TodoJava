@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"
+    android:background="@color/white"
     tools:context=".FeedActivity">
 
     <!-- Header Section -->
@@ -12,7 +12,7 @@
         android:id="@+id/appBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/colorSurface"
+        android:background="@color/white"
         app:elevation="0dp"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -37,6 +37,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:text="Tasks"
+                android:textColor="@color/primary"
                 android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
                 android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -55,7 +56,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/buttonAddFriend"
                 app:layout_constraintTop_toTopOf="parent"
-                app:tint="?attr/colorOnSurfaceVariant" />
+                app:tint="@color/primary" />
 
             <ImageButton
                 android:id="@+id/buttonAddFriend"
@@ -68,7 +69,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/buttonSharedItems"
                 app:layout_constraintTop_toTopOf="parent"
-                app:tint="?attr/colorOnSurfaceVariant" />
+                app:tint="@color/primary" />
 
             <ImageButton
                 android:id="@+id/buttonSharedItems"
@@ -81,7 +82,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/buttonSettings"
                 app:layout_constraintTop_toTopOf="parent"
-                app:tint="?attr/colorOnSurfaceVariant" />
+                app:tint="@color/primary" />
 
             <ImageButton
                 android:id="@+id/buttonSettings"
@@ -94,7 +95,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:tint="?attr/colorOnSurfaceVariant" />
+                app:tint="@color/primary" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.appbar.AppBarLayout>
@@ -135,6 +136,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="All"
+                        app:chipBackgroundColor="@color/primaryContainer"
+                        app:chipStrokeWidth="0dp"
+                        android:textColor="@color/onPrimaryContainer"
                         android:checked="true" />
 
                     <com.google.android.material.chip.Chip
@@ -174,7 +178,7 @@
                     android:layout_weight="1"
                     android:text="My List"
                     android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
+                    android:textColor="@color/primary" />
 
                 <Spinner
                     android:id="@+id/filterSpinner"
@@ -197,10 +201,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="100dp"
+                app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
+                app:cardElevation="2dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant">
+                app:strokeColor="@color/primaryContainer">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -212,6 +217,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Statistics"
+                        android:textColor="@color/primary"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
                     <LinearLayout
@@ -235,6 +241,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
                             android:text="Set Range"
+                            android:textColor="@color/primary"
                             android:textSize="12sp" />
                     </LinearLayout>
 
@@ -245,7 +252,7 @@
                         android:layout_marginTop="8dp"
                         android:text="Tasks completed in the last 7 days"
                         android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:textColor="@color/onSurfaceVariant" />
 
                     <com.github.mikephil.charting.charts.BarChart
                         android:id="@+id/taskBarChart"
@@ -270,8 +277,8 @@
         app:elevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:backgroundTint="?attr/colorSecondaryContainer"
-        app:tint="?attr/colorOnSecondaryContainer" />
+        app:backgroundTint="@color/primaryContainer"
+        app:tint="@color/primary" />
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabAddTask"
@@ -282,7 +289,7 @@
         app:icon="@drawable/ic_add"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:backgroundTint="?attr/colorPrimary"
-        app:tint="?attr/colorOnPrimary" />
+        app:backgroundTint="@color/primary"
+        app:tint="@color/white" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

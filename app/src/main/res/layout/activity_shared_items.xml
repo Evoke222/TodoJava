@@ -4,14 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"
+    android:background="@color/white"
     tools:context=".SharedItemsActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarShared"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/colorSurface"
+        android:background="@color/white"
         app:elevation="0dp"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -29,13 +29,14 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:tint="?attr/colorOnSurface" />
+                app:tint="@color/primary" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:text="Shared Requests"
+                android:textColor="@color/primary"
                 android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
                 android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -71,7 +72,7 @@
             android:layout_height="80dp"
             android:alpha="0.3"
             android:src="@drawable/ic_shared_items"
-            app:tint="?attr/colorOnSurfaceVariant" />
+            app:tint="@color/primary" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -79,14 +80,14 @@
             android:layout_marginTop="16dp"
             android:text="All caught up!"
             android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-            android:textColor="?attr/colorOnSurfaceVariant" />
+            android:textColor="@color/primary" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="No new shared items."
             android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-            android:textColor="?attr/colorOnSurfaceVariant" />
+            android:textColor="@color/onSurfaceVariant" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

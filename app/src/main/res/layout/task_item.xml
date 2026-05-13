@@ -9,8 +9,11 @@
     android:layout_marginTop="4dp"
     android:layout_marginEnd="8dp"
     android:layout_marginBottom="4dp"
+    app:cardBackgroundColor="@color/white"
     app:cardElevation="2dp"
-    app:cardCornerRadius="8dp">
+    app:cardCornerRadius="12dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/primaryContainer">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constraintLayout"
@@ -22,6 +25,7 @@
             android:id="@+id/taskCheckBox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:buttonTint="@color/primary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -29,9 +33,10 @@
             android:id="@+id/taskTitleTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="12dp"
             android:textSize="18sp"
             android:textStyle="bold"
+            android:textColor="@color/primary"
             app:layout_constraintEnd_toStartOf="@id/button_delete_task"
             app:layout_constraintStart_toEndOf="@id/taskCheckBox"
             app:layout_constraintTop_toTopOf="parent"
@@ -43,7 +48,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textSize="14sp"
-            android:textColor="?attr/colorError"
+            android:textColor="#EF4444"
             app:layout_constraintStart_toStartOf="@id/taskTitleTextView"
             app:layout_constraintEnd_toEndOf="@id/taskTitleTextView"
             app:layout_constraintTop_toBottomOf="@id/taskTitleTextView"
@@ -55,6 +60,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textSize="14sp"
+            android:textColor="@color/onSurfaceVariant"
             app:layout_constraintStart_toStartOf="@id/taskTitleTextView"
             app:layout_constraintEnd_toEndOf="@id/taskTitleTextView"
             app:layout_constraintTop_toBottomOf="@id/taskDueDateTextView"
@@ -68,6 +74,10 @@
             android:layout_marginTop="8dp"
             android:text="Remind me"
             android:textSize="12sp"
+            android:textColor="@color/primary"
+            app:chipIconTint="@color/primary"
+            app:chipBackgroundColor="@color/primaryContainer"
+            app:chipStrokeWidth="0dp"
             app:chipIcon="@drawable/ic_notifications"
             app:layout_constraintStart_toStartOf="@id/taskTitleTextView"
             app:layout_constraintTop_toBottomOf="@id/taskDetailsTextView" />
@@ -83,21 +93,23 @@
             app:layout_constraintEnd_toStartOf="@id/taskTypeTextView"
             app:layout_constraintTop_toBottomOf="@id/chipRemindMe">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivOwner"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_default_profile"
-                android:contentDescription="Owner" />
+                android:contentDescription="Owner"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.SmallComponent" />
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivSharedWith"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_marginStart="-8dp"
                 android:src="@drawable/ic_default_profile"
                 android:visibility="gone"
-                android:contentDescription="Shared with" />
+                android:contentDescription="Shared with"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.SmallComponent" />
 
             <TextView
                 android:id="@+id/tvMemberNames"
@@ -105,6 +117,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:textSize="12sp"
+                android:textColor="@color/primary"
                 tools:text="You + John" />
         </LinearLayout>
 
@@ -115,7 +128,7 @@
             android:src="@drawable/ic_delete"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Delete task"
-            app:tint="?android:attr/textColorSecondary"
+            app:tint="@color/primary"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -126,8 +139,10 @@
             android:layout_marginTop="8dp"
             android:textSize="12sp"
             android:textStyle="italic"
-            android:padding="4dp"
+            android:padding="6dp"
+            android:textColor="@color/white"
             android:background="@drawable/bg_type_tag"
+            android:backgroundTint="@color/primary"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             tools:text="Task" />

@@ -3,11 +3,11 @@ package com.example.todojava;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.todojava.tasks.Task;
+import com.google.android.material.button.MaterialButton;
 import java.util.List;
 import java.util.Map;
 
@@ -49,8 +49,8 @@ public class SharedItemsAdapter extends RecyclerView.Adapter<SharedItemsAdapter.
     static class SharedItemViewHolder extends RecyclerView.ViewHolder {
         TextView tvSharedItemTitle;
         TextView tvSharedFrom;
-        ImageButton buttonAccept;
-        ImageButton buttonDecline;
+        MaterialButton buttonAccept;
+        MaterialButton buttonDecline;
 
         SharedItemViewHolder(@NonNull View itemView) {
             super(itemView);
