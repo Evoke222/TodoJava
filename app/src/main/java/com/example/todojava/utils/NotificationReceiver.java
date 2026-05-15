@@ -31,36 +31,41 @@ public class NotificationReceiver extends BroadcastReceiver {
         }
     }
 
+    /**
+     * שאילתה מספר 9: שליפת משימות פתוחות להיום ושליחת סיכום יומי
+     */
     private void fetchAndShowDailySummary(Context context) {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
 
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        Date startOfDay = cal.getTime();
-
-        cal.set(Calendar.HOUR_OF_DAY, 23);
-        cal.set(Calendar.MINUTE, 59);
-        cal.set(Calendar.SECOND, 59);
-        Date endOfDay = cal.getTime();
+        // קבלת התאריך של היום בפורמט שבו המשימות נשמרות (למשל: 2024-12-25)
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String todayStr = sdf.format(new Date());
 
         FirebaseFirestore.getInstance().collection("items")
                 .whereEqualTo("owner_uid", uid)
-                .whereEqualTo("completed", false)
+                .whereEqualTo("completed", false) // רק משימות שלא בוצעו
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     int taskCount = 0;
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         Task task = doc.toObject(Task.class);
-                        // Simplified check for today's tasks
-                        taskCount++;
+                        
+                        // בדיקה אם התאריך של המשימה הוא היום
+                        if (task.getDueDate() != null && task.getDueDate().equals(todayStr)) {
+                            taskCount++;
+                        }
                     }
 
                     if (taskCount > 0) {
-                        NotificationHelper.showNotification(context, "Good Morning!", "You have " + taskCount + " tasks remaining for today.", 999);
+                        String title = "בוקר טוב!";
+                        String message = taskCount == 1 
+                            ? "מחכה לך משימה אחת להיום." 
+                            : "יש לך " + taskCount + " משימות לביצוע היום.";
+                            
+                        NotificationHelper.showNotification(context, title, message, 999);
                     }
-                });
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Error fetching daily summary", e));
     }
 }

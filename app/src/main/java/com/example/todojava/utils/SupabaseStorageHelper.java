@@ -4,7 +4,6 @@ import android.util.Log;
 import java.io.File;
 
 import okhttp3.MediaType;
-import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
@@ -38,17 +37,23 @@ public class SupabaseStorageHelper {
                     .build();
             SupabaseStorageService service = retrofit.create(SupabaseStorageService.class);
 
+            // Create RequestBody directly from the file (raw binary)
             RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), file);
-            MultipartBody.Part body = MultipartBody.Part.createFormData("file", filePath, requestFile);
 
             String bearer = "Bearer " + supabaseKey;
+            
+            // Call service with raw Body instead of Multipart. 
+            // We added "true" for the x-upsert header to allow overwriting.
             Call<ResponseBody> call = service.uploadFile(
                     supabaseKey,
                     bearer,
+                    "image/jpeg",
+                    "true",
                     SUPABASE_BUCKET,
                     filePath,
-                    body
+                    requestFile
             );
+            
             call.enqueue(new Callback<ResponseBody>() {
                 @Override
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
