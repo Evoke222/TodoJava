@@ -6,9 +6,6 @@ import java.util.Date;
 
 public class FriendRequest {
 
-    // This field will hold the document's ID from Firestore.
-    // @Exclude prevents Firestore from trying to save this field back into the document.
-    @Exclude
     private String documentId;
 
     private String fromUserId;
@@ -28,7 +25,8 @@ public class FriendRequest {
 
     // --- Getters and Setters ---
 
-    // ⬇️ ADD THESE TWO METHODS ⬇️
+    // Move @Exclude here to ensure Firebase ignores it during saving/loading
+    @Exclude
     public String getDocumentId() {
         return documentId;
     }
@@ -36,7 +34,6 @@ public class FriendRequest {
     public void setDocumentId(String documentId) {
         this.documentId = documentId;
     }
-    // ⬆️ END OF NEW METHODS ⬆️
 
     public String getFromUserId() { return fromUserId; }
     public void setFromUserId(String fromUserId) { this.fromUserId = fromUserId; }

@@ -70,6 +70,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         ImageView ivOwner;
         ImageView ivSharedWith;
         TextView tvMemberNames;
+        View memberStrikeThrough;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -84,6 +85,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             ivOwner = itemView.findViewById(R.id.ivOwner);
             ivSharedWith = itemView.findViewById(R.id.ivSharedWith);
             tvMemberNames = itemView.findViewById(R.id.tvMemberNames);
+            memberStrikeThrough = itemView.findViewById(R.id.memberStrikeThrough);
         }
 
         public void bind(final Task task, final OnTaskInteractionListener listener, FirebaseFirestore db, String currentUid) {
@@ -113,15 +115,16 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskType.setText("Task");
             }
 
-            if (task.isCompleted()) {
-                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-            } else {
-                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-            }
+            // Initial UI state based on data
+            updateStrikeThrough(task.isCompleted());
 
             cbTaskCompleted.setOnClickListener(v -> {
+                boolean checked = cbTaskCompleted.isChecked();
+                // Update UI immediately for responsiveness
+                updateStrikeThrough(checked);
+                
                 if (listener != null) {
-                    listener.onTaskChecked(task, cbTaskCompleted.isChecked());
+                    listener.onTaskChecked(task, checked);
                 }
             });
 
@@ -137,6 +140,16 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                             .show();
                 }
             });
+        }
+
+        private void updateStrikeThrough(boolean isCompleted) {
+            if (isCompleted) {
+                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                memberStrikeThrough.setVisibility(View.VISIBLE);
+            } else {
+                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                memberStrikeThrough.setVisibility(View.GONE);
+            }
         }
 
         private void loadMembersInfo(Task task, FirebaseFirestore db, String currentUid) {
